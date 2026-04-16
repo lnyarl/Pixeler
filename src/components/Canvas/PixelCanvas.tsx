@@ -9,7 +9,15 @@ import UndoRedoButtons from "@/components/Toolbar/UndoRedoButtons";
 const MIN_SCALE = 1;
 const MAX_SCALE = 64;
 
-export default function PixelCanvas() {
+export interface PixelCanvasHandle {
+  loadImageData: (data: ImageData) => void;
+}
+
+interface PixelCanvasProps {
+  onReady?: (handle: PixelCanvasHandle) => void;
+}
+
+export default function PixelCanvas({ onReady }: PixelCanvasProps) {
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
@@ -101,6 +109,29 @@ export default function PixelCanvas() {
     if (!ctx) return;
     ctx.putImageData(imgData, 0, 0);
   }, []);
+
+  // 외부에서 이미지 로드 (AI 생성 결과, 히스토리 복원 등)
+  const loadImageData = useCallback(
+    (data: ImageData) => {
+      if (imageDataRef.current) {
+        undoManagerRef.current.pushSnapshot(imageDataRef.current);
+      }
+      imageDataRef.current = new ImageData(
+        new Uint8ClampedArray(data.data),
+        data.width,
+        data.height
+      );
+      renderCanvas();
+      useCanvasStore.getState().setDirty(true);
+      triggerUpdate();
+    },
+    [renderCanvas, triggerUpdate]
+  );
+
+  // onReady 콜백으로 handle 전달
+  useEffect(() => {
+    onReady?.({ loadImageData });
+  }, [onReady, loadImageData]);
 
   // undo / redo
   const handleUndo = useCallback(() => {

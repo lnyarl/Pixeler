@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Header from "./components/Layout/Header";
 import Sidebar from "./components/Layout/Sidebar";
 import MainArea from "./components/Layout/MainArea";
@@ -9,11 +9,27 @@ import ColorPicker from "./components/Toolbar/ColorPicker";
 import BrushSizeSelector from "./components/Toolbar/BrushSizeSelector";
 import ViewTypeSelector from "./components/Toolbar/ViewTypeSelector";
 import PixelCanvas from "./components/Canvas/PixelCanvas";
+import type { PixelCanvasHandle } from "./components/Canvas/PixelCanvas";
 import ApiKeySettings from "./components/Settings/ApiKeySettings";
 import ProviderSelector from "./components/Settings/ProviderSelector";
+import PromptInput from "./components/AIPanel/PromptInput";
+import GenerateButton from "./components/AIPanel/GenerateButton";
+import DraftGrid from "./components/AIPanel/DraftGrid";
+import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
+import LoadingIndicator from "./components/AIPanel/LoadingIndicator";
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [canvasHandle, setCanvasHandle] = useState<PixelCanvasHandle | null>(
+    null
+  );
+
+  const handleImageReady = useCallback(
+    (imageData: ImageData) => {
+      canvasHandle?.loadImageData(imageData);
+    },
+    [canvasHandle]
+  );
 
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white">
@@ -28,10 +44,16 @@ function App() {
           <ViewTypeSelector />
         </Sidebar>
         <MainArea>
-          <PixelCanvas />
+          <PixelCanvas onReady={setCanvasHandle} />
         </MainArea>
         <AIPanel>
           <ProviderSelector />
+          <hr className="border-gray-700" />
+          <PromptInput />
+          <GenerateButton onImageReady={handleImageReady} />
+          <LoadingIndicator />
+          <ErrorDisplay />
+          <DraftGrid onSelect={handleImageReady} />
         </AIPanel>
       </div>
       {settingsOpen && (
