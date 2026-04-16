@@ -30,7 +30,7 @@ export default function DraftGrid({ drafts, onSelect }: DraftGridProps) {
             title={`초안 ${i + 1}`}
           >
             <img
-              src={`data:image/png;base64,${item.draft.base64}`}
+              src={`data:image/png;base64,${item.thumbnail}`}
               alt={`초안 ${i + 1}`}
               className="w-full h-full object-contain"
               style={{ imageRendering: "pixelated" }}

@@ -23,6 +23,7 @@ export interface ProcessedDraft {
   draft: GeneratedImage;
   imageData: ImageData;
   historyId: string;
+  thumbnail: string;
 }
 
 interface PromptPanelProps {
@@ -148,14 +149,15 @@ export default function PromptPanel({
 
       // 히스토리에 저장 (activeItemId가 이미 갱신된 후)
       const processed: ProcessedDraft[] = processedImages.map((item) => {
+        const thumbnail = imageDataToBase64(item.imageData);
         const historyId = addHistoryItem({
           prompt,
-          thumbnail: item.draft.base64,
+          thumbnail,
           imageData: item.imageData,
           type: historyType,
           parentId,
         });
-        return { ...item, historyId };
+        return { ...item, historyId, thumbnail };
       });
 
       setDrafts(results);
@@ -215,7 +217,7 @@ export default function PromptPanel({
       parentId,
     });
 
-    onDraftsReady?.([{ draft: { base64: thumbnail, metadata: { provider: "dev", model: "mock", prompt: prompt || "dev", timestamp: Date.now() } }, imageData: imgData, historyId }]);
+    onDraftsReady?.([{ draft: { base64: thumbnail, metadata: { provider: "dev", model: "mock", prompt: prompt || "dev", timestamp: Date.now() } }, imageData: imgData, historyId, thumbnail }]);
     setPrompt("");
   }
 
