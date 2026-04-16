@@ -65,7 +65,7 @@ export function computeGraphLayout(items: HistoryItem[]): GraphLayout {
     return lane;
   }
 
-  function dfs(item: HistoryItem, lane: number) {
+  function dfs(item: HistoryItem, lane: number): GraphNode {
     activeLanes.add(lane);
 
     const children = childrenMap.get(item.id) ?? [];
@@ -83,6 +83,14 @@ export function computeGraphLayout(items: HistoryItem[]): GraphLayout {
       return node;
     }
 
+    // 분기가 있으면(자식 2+) 나머지 자식용 레인을 먼저 확보
+    const branchLanes: number[] = [];
+    for (let i = 1; i < children.length; i++) {
+      const newLane = getFreeLane();
+      activeLanes.add(newLane); // 미리 예약
+      branchLanes.push(newLane);
+    }
+
     // 첫 번째 자식은 같은 레인
     const firstChild = dfs(children[0], lane);
     node.children.push(firstChild);
@@ -93,10 +101,9 @@ export function computeGraphLayout(items: HistoryItem[]): GraphLayout {
       toLane: firstChild.lane,
     });
 
-    // 나머지 자식은 새 레인
+    // 나머지 자식은 예약해둔 레인 사용
     for (let i = 1; i < children.length; i++) {
-      const newLane = getFreeLane();
-      const childNode = dfs(children[i], newLane);
+      const childNode = dfs(children[i], branchLanes[i - 1]);
       node.children.push(childNode);
       lines.push({
         fromRow: node.row,

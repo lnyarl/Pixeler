@@ -41,7 +41,6 @@ export default function PromptPanel({
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const addHistoryItem = useHistoryStore((s) => s.addItem);
   const historyItems = useHistoryStore((s) => s.items);
-  const activeItemId = useHistoryStore((s) => s.activeItemId);
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
@@ -65,6 +64,16 @@ export default function PromptPanel({
     try {
       const adapter = createAdapter(selectedProvider, apiKey);
       let results: GeneratedImage[];
+
+      console.log("[Pixeler] 생성 요청:", {
+        prompt,
+        hasCanvasContent,
+        activeItemId: useHistoryStore.getState().activeItemId,
+        parentId: hasCanvasContent ? useHistoryStore.getState().activeItemId : null,
+        provider: selectedProvider,
+        size: `${width}x${height}`,
+        viewType,
+      });
 
       if (hasCanvasContent && adapter.regenerateWithFeedback) {
         // 이전 대화 맥락 구성 (최근 5개까지)
@@ -96,8 +105,9 @@ export default function PromptPanel({
         });
       }
 
-      // parentId를 생성 전에 캡처 (다중 초안 시 모두 같은 부모)
-      const parentId = hasCanvasContent ? activeItemId : null;
+      // parentId를 store에서 직접 읽어 stale closure 방지
+      const currentActiveId = useHistoryStore.getState().activeItemId;
+      const parentId = hasCanvasContent ? currentActiveId : null;
       const historyType = hasCanvasContent ? "feedback" : "generate";
 
       const processed: ProcessedDraft[] = [];
@@ -150,7 +160,18 @@ export default function PromptPanel({
       }
     }
 
-    const parentId = hasCanvasContent ? activeItemId : null;
+    // store에서 직접 읽어 stale closure 방지
+    const currentActiveId = useHistoryStore.getState().activeItemId;
+    const canvasData2 = getCanvasImageData();
+    const hasContent = canvasData2 !== null && hasVisiblePixels(canvasData2);
+    const parentId = hasContent ? currentActiveId : null;
+
+    console.log("[Pixeler DEV] 스킵 생성:", {
+      prompt: prompt || "[DEV] 더미 이미지",
+      hasContent,
+      activeItemId: currentActiveId,
+      parentId,
+    });
     const historyType = hasCanvasContent ? "feedback" : "generate";
     const historyId = addHistoryItem({
       prompt: prompt || "[DEV] 더미 이미지",
