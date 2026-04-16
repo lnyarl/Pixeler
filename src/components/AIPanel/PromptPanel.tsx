@@ -76,16 +76,6 @@ export default function PromptPanel({
       const adapter = createAdapter(selectedProvider, apiKey);
       let results: GeneratedImage[];
 
-      console.log("[Pixeler] 생성 요청:", {
-        prompt,
-        hasCanvasContent,
-        activeItemId: useHistoryStore.getState().activeItemId,
-        parentId: hasCanvasContent ? useHistoryStore.getState().activeItemId : null,
-        provider: selectedProvider,
-        size: `${width}x${height}`,
-        viewType,
-      });
-
       if (hasCanvasContent && adapter.regenerateWithFeedback) {
         // 이전 대화 맥락 구성 (최근 5개까지)
         const recentHistory = historyItems
@@ -93,6 +83,14 @@ export default function PromptPanel({
           .reverse()
           .map((h) => h.prompt)
           .join(" → ");
+
+        console.log("[Pixeler] 수정 생성 요청:", {
+          userPrompt: prompt,
+          originalPrompt: recentHistory,
+          finalPrompt: `Original: ${recentHistory}\nChange: ${prompt}\nStyle: ${width}x${height} pixel art, ${viewType}...`,
+          provider: selectedProvider,
+          hasReferenceImage: true,
+        });
 
         const referenceBase64 = imageDataToBase64(canvasData!);
         results = await adapter.regenerateWithFeedback({
@@ -105,7 +103,13 @@ export default function PromptPanel({
           signal: controller.signal,
         });
       } else {
-        // 캔버스가 비어있으면 텍스트만으로 생성
+        console.log("[Pixeler] 새 생성 요청:", {
+          userPrompt: prompt,
+          finalPrompt: `${prompt}\nStyle: ${width}x${height} pixel art, ${viewType}...`,
+          provider: selectedProvider,
+          count,
+        });
+
         results = await adapter.generate({
           prompt,
           width,
