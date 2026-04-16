@@ -5,7 +5,7 @@ const MIN_RESOLUTION = 8;
 const MAX_RESOLUTION = 128;
 
 export type ResolutionPreset = (typeof RESOLUTION_PRESETS)[number];
-export type ToolType = "pen" | "eraser" | "mask";
+export type ToolType = "pen" | "eraser" | "move" | "mask";
 
 export interface CanvasState {
   width: number;

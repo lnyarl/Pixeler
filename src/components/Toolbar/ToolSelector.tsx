@@ -3,6 +3,7 @@ import { useCanvasStore, type ToolType } from "@/stores/canvasStore";
 const TOOLS: { type: ToolType; label: string }[] = [
   { type: "pen", label: "펜" },
   { type: "eraser", label: "지우개" },
+  { type: "move", label: "이동" },
 ];
 
 export default function ToolSelector() {

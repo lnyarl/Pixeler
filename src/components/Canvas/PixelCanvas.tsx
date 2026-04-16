@@ -156,9 +156,11 @@ export default function PixelCanvas() {
   const zoomIn = useCallback(() => setScale((s) => Math.min(MAX_SCALE, s + 1)), []);
   const zoomOut = useCallback(() => setScale((s) => Math.max(MIN_SCALE, s - 1)), []);
 
+  const currentTool = useCanvasStore((s) => s.currentTool);
   const um = undoManagerRef.current;
   const scaledW = width * scale;
   const scaledH = height * scale;
+  const cursorClass = currentTool === "move" ? "cursor-grab active:cursor-grabbing" : "cursor-crosshair";
 
   return (
     <div
@@ -168,7 +170,7 @@ export default function PixelCanvas() {
       onMouseLeave={handleMouseUp}
     >
       <div
-        className="relative cursor-crosshair"
+        className={`relative ${cursorClass}`}
         style={{ width: scaledW, height: scaledH }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}

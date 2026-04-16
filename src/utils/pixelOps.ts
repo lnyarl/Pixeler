@@ -51,6 +51,33 @@ export function fillPixels(
   }
 }
 
+/** 이미지 전체를 (dx, dy)만큼 이동. 빈 영역은 투명. */
+export function shiftImageData(
+  src: ImageData,
+  dx: number,
+  dy: number
+): ImageData {
+  const w = src.width;
+  const h = src.height;
+  const dst = new ImageData(w, h);
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const srcX = x - dx;
+      const srcY = y - dy;
+      if (srcX < 0 || srcX >= w || srcY < 0 || srcY >= h) continue;
+      const srcIdx = (srcY * w + srcX) * 4;
+      const dstIdx = (y * w + x) * 4;
+      dst.data[dstIdx] = src.data[srcIdx];
+      dst.data[dstIdx + 1] = src.data[srcIdx + 1];
+      dst.data[dstIdx + 2] = src.data[srcIdx + 2];
+      dst.data[dstIdx + 3] = src.data[srcIdx + 3];
+    }
+  }
+
+  return dst;
+}
+
 /** Bresenham 라인: 두 점 사이를 채움 (빠른 드래그 시 점 누락 방지) */
 export function drawLine(
   imageData: ImageData,
