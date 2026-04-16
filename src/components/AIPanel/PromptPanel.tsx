@@ -25,6 +25,8 @@ export interface ProcessedDraft {
   imageData: ImageData;
   historyId: string;
   thumbnail: string;
+  /** AI 원본 이미지 (후처리 전) — DEV 모드 비교용 */
+  rawBase64: string;
 }
 
 interface PromptPanelProps {
@@ -210,7 +212,7 @@ export default function PromptPanel({
           type: historyType,
           parentId,
         });
-        return { ...item, historyId, thumbnail };
+        return { ...item, historyId, thumbnail, rawBase64: item.draft.base64 };
       });
 
       setDrafts(results);
@@ -270,7 +272,7 @@ export default function PromptPanel({
       parentId,
     });
 
-    onDraftsReady?.([{ draft: { base64: thumbnail, metadata: { provider: "dev", model: "mock", prompt: prompt || "dev", timestamp: Date.now() } }, imageData: imgData, historyId, thumbnail }]);
+    onDraftsReady?.([{ draft: { base64: thumbnail, metadata: { provider: "dev", model: "mock", prompt: prompt || "dev", timestamp: Date.now() } }, imageData: imgData, historyId, thumbnail, rawBase64: thumbnail }]);
     setPrompt("");
   }
 

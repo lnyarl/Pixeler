@@ -18,6 +18,7 @@ import type { ProcessedDraft } from "./components/AIPanel/PromptPanel";
 import DraftGrid from "./components/AIPanel/DraftGrid";
 import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
 import HistoryPanel from "./components/History/HistoryPanel";
+import DevRawPreview from "./components/AIPanel/DevRawPreview";
 import ExportButton from "./components/Export/ExportButton";
 import { useGenerationStore } from "./stores/generationStore";
 import { useResponsive } from "./hooks/useResponsive";
@@ -96,6 +97,7 @@ function App() {
           />
           <ErrorDisplay />
           <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
+          <DevRawPreview drafts={processedDrafts} />
           <ExportButton getCanvasImageData={getCanvasImageData} />
           <hr className="border-gray-700" />
           <HistoryPanel onRestore={handleImageReady} />
