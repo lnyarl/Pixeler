@@ -97,7 +97,7 @@ function App() {
           />
           <ErrorDisplay />
           <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
-          <DevRawPreview drafts={processedDrafts} />
+          <DevRawPreview />
           <ExportButton getCanvasImageData={getCanvasImageData} />
           <hr className="border-gray-700" />
           <HistoryPanel onRestore={handleImageReady} />

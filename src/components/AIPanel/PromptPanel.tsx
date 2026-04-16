@@ -126,6 +126,7 @@ export default function PromptPanel({
           imageData: composited,
           type: "inpaint",
           parentId: currentActiveId,
+          rawBase64: result.base64,
         });
 
         clearMask();
@@ -211,6 +212,7 @@ export default function PromptPanel({
           imageData: item.imageData,
           type: historyType,
           parentId,
+          rawBase64: item.draft.base64,
         });
         return { ...item, historyId, thumbnail, rawBase64: item.draft.base64 };
       });

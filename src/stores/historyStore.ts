@@ -10,6 +10,8 @@ export interface HistoryItem {
   timestamp: number;
   type: "generate" | "inpaint" | "feedback";
   parentId: string | null;
+  /** AI 원본 이미지 (후처리 전, base64) — DEV 모드 비교용 */
+  rawBase64?: string;
 }
 
 export interface HistoryState {
