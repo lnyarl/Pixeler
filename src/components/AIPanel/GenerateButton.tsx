@@ -5,6 +5,7 @@ import { createAdapter } from "@/services/ai/adapterFactory";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import { base64ToImageData } from "@/utils/imageConvert";
 import type { GeneratedImage } from "@/services/ai/types";
+import { useHistoryStore } from "@/stores/historyStore";
 
 /** 후처리된 ImageData를 draft와 함께 보관 */
 export interface ProcessedDraft {
@@ -34,6 +35,7 @@ export default function GenerateButton({
   const viewType = useSettingsStore((s) => s.viewType);
 
   const paletteSize = useSettingsStore((s) => s.paletteSize);
+  const addHistoryItem = useHistoryStore((s) => s.addItem);
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
@@ -77,6 +79,16 @@ export default function GenerateButton({
 
       setDrafts(results);
       onDraftsReady?.(processed);
+
+      // 히스토리에 저장
+      for (const item of processed) {
+        addHistoryItem({
+          prompt,
+          thumbnail: item.draft.base64,
+          imageData: item.imageData,
+          type: "generate",
+        });
+      }
 
       // 1장이면 바로 캔버스에 로드
       if (processed.length === 1) {
