@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import { useCanvasStore } from "@/stores/canvasStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import {
   hexToRgba,
   screenToPixel,
@@ -98,7 +99,7 @@ export function useDrawTool({
       }
 
       // 스냅샷 저장 (undo용) — mask 모드 제외
-      undoManager.pushSnapshot(imgData);
+      undoManager.pushSnapshot(imgData, useHistoryStore.getState().activeItemId);
       onStateChange();
 
       if (currentTool === "move") {

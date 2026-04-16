@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useCanvasStore } from "@/stores/canvasStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { UndoRedoManager } from "@/utils/undoRedoManager";
 import { useDrawTool } from "./tools/useDrawTool";
 import GridOverlay from "./GridOverlay";
@@ -119,7 +120,8 @@ export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
     (data: ImageData) => {
       // 현재 상태를 undo 스택에 저장 (히스토리 이동도 undo 가능)
       if (imageDataRef.current) {
-        undoManagerRef.current.pushSnapshot(imageDataRef.current);
+        const currentActiveId = useHistoryStore.getState().activeItemId;
+        undoManagerRef.current.pushSnapshot(imageDataRef.current, currentActiveId);
       }
       imageDataRef.current = new ImageData(
         new Uint8ClampedArray(data.data),
@@ -148,13 +150,15 @@ export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
     onReady?.({ loadImageData, getImageData });
   }, [onReady, loadImageData, getImageData]);
 
-  // undo / redo
+  // undo / redo (ImageData + activeItemId 함께 복원)
   const handleUndo = useCallback(() => {
     const imgData = imageDataRef.current;
     if (!imgData) return;
-    const prev = undoManagerRef.current.undo(imgData);
+    const currentActiveId = useHistoryStore.getState().activeItemId;
+    const prev = undoManagerRef.current.undo(imgData, currentActiveId);
     if (prev) {
-      imageDataRef.current = prev;
+      imageDataRef.current = prev.imageData;
+      useHistoryStore.getState().setActiveItemId(prev.activeItemId);
       renderCanvas();
       triggerUpdate();
     }
@@ -163,9 +167,11 @@ export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
   const handleRedo = useCallback(() => {
     const imgData = imageDataRef.current;
     if (!imgData) return;
-    const next = undoManagerRef.current.redo(imgData);
+    const currentActiveId = useHistoryStore.getState().activeItemId;
+    const next = undoManagerRef.current.redo(imgData, currentActiveId);
     if (next) {
-      imageDataRef.current = next;
+      imageDataRef.current = next.imageData;
+      useHistoryStore.getState().setActiveItemId(next.activeItemId);
       renderCanvas();
       triggerUpdate();
     }
