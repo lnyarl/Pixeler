@@ -18,8 +18,12 @@ export default function ResolutionSelector() {
   const [error, setError] = useState("");
 
   function confirmChange(newW: number, newH: number) {
-    if (dirty && !window.confirm("현재 편집 내용이 사라집니다. 해상도를 변경하시겠습니까?")) {
-      return;
+    if (dirty) {
+      const shrinking = newW < width || newH < height;
+      const msg = shrinking
+        ? `해상도를 ${newW}×${newH}로 줄이면 왼쪽 위를 기준으로 잘립니다. 변경하시겠습니까?`
+        : `해상도를 ${newW}×${newH}로 변경합니다. 기존 그림은 왼쪽 위에 유지됩니다. 변경하시겠습니까?`;
+      if (!window.confirm(msg)) return;
     }
     setResolution(newW, newH);
     setCustomW("");
@@ -54,17 +58,6 @@ export default function ResolutionSelector() {
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <label className="text-xs text-gray-400 font-medium">해상도</label>
-        <button
-          onClick={() => setLinked(!linked)}
-          className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
-            linked
-              ? "bg-blue-600 text-white"
-              : "bg-gray-700 text-gray-400 hover:bg-gray-600"
-          }`}
-          title={linked ? "가로세로 연동 (클릭하여 분리)" : "가로세로 분리 (클릭하여 연동)"}
-        >
-          {linked ? "🔗" : "↔"}
-        </button>
       </div>
 
       <div className="flex gap-1">
@@ -84,6 +77,17 @@ export default function ResolutionSelector() {
       </div>
 
       <div className="flex gap-1 items-center">
+        <button
+          onClick={() => setLinked(!linked)}
+          className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
+            linked
+              ? "bg-blue-600 text-white"
+              : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+          }`}
+          title={linked ? "가로세로 연동 (클릭하여 분리)" : "가로세로 분리 (클릭하여 연동)"}
+        >
+          {linked ? "🔗" : "↔"}
+        </button>
         <input
           type="number"
           min={8}

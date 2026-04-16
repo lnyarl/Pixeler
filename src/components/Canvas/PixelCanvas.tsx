@@ -33,16 +33,37 @@ export default function PixelCanvas() {
     return Math.max(MIN_SCALE, Math.min(fitScale, MAX_SCALE));
   }, [width, height]);
 
-  // 캔버스 초기화
+  // 해상도 변경 시 기존 이미지 보존 (좌상단 기준 crop/pad)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const oldData = imageDataRef.current;
     canvas.width = width;
     canvas.height = height;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    imageDataRef.current = ctx.createImageData(width, height);
-    ctx.putImageData(imageDataRef.current, 0, 0);
+
+    const newData = ctx.createImageData(width, height);
+
+    if (oldData) {
+      const copyW = Math.min(oldData.width, width);
+      const copyH = Math.min(oldData.height, height);
+      for (let y = 0; y < copyH; y++) {
+        for (let x = 0; x < copyW; x++) {
+          const srcIdx = (y * oldData.width + x) * 4;
+          const dstIdx = (y * width + x) * 4;
+          newData.data[dstIdx] = oldData.data[srcIdx];
+          newData.data[dstIdx + 1] = oldData.data[srcIdx + 1];
+          newData.data[dstIdx + 2] = oldData.data[srcIdx + 2];
+          newData.data[dstIdx + 3] = oldData.data[srcIdx + 3];
+        }
+      }
+    }
+
+    imageDataRef.current = newData;
+    ctx.putImageData(newData, 0, 0);
     undoManagerRef.current.clear();
     triggerUpdate();
   }, [width, height, triggerUpdate]);
