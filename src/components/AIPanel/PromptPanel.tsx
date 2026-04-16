@@ -199,16 +199,17 @@ export default function PromptPanel({
     // onImageReady를 먼저 호출 → loadImageData에서 이전 activeItemId를 undo 스택에 저장
     onImageReady(imgData);
 
+    const thumbnail = imageDataToBase64(imgData);
     const historyType = hasContent ? "feedback" : "generate";
     const historyId = addHistoryItem({
       prompt: prompt || "[DEV] 더미 이미지",
-      thumbnail: "",
+      thumbnail,
       imageData: imgData,
       type: historyType,
       parentId,
     });
 
-    onDraftsReady?.([{ draft: { base64: "", metadata: { provider: "dev", model: "mock", prompt: prompt || "dev", timestamp: Date.now() } }, imageData: imgData, historyId }]);
+    onDraftsReady?.([{ draft: { base64: thumbnail, metadata: { provider: "dev", model: "mock", prompt: prompt || "dev", timestamp: Date.now() } }, imageData: imgData, historyId }]);
     setPrompt("");
   }
 
