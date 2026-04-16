@@ -8,6 +8,17 @@ import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import { base64ToImageData, imageDataToBase64 } from "@/utils/imageConvert";
 import type { GeneratedImage } from "@/services/ai/types";
 
+let devCounter = 0;
+
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  s /= 100;
+  l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+
 export interface ProcessedDraft {
   draft: GeneratedImage;
   imageData: ImageData;
@@ -147,17 +158,22 @@ export default function PromptPanel({
     }
   }
 
-  /** DEV: AI 호출 없이 랜덤 더미 이미지 생성 */
+  /** DEV: AI 호출 없이 순차 더미 이미지 생성 */
   function handleSkip() {
+    devCounter++;
     const imgData = new ImageData(width, height);
-    // 랜덤 픽셀아트 생성
-    for (let i = 0; i < imgData.data.length; i += 4) {
-      if (Math.random() > 0.7) {
-        imgData.data[i] = Math.floor(Math.random() * 256);
-        imgData.data[i + 1] = Math.floor(Math.random() * 256);
-        imgData.data[i + 2] = Math.floor(Math.random() * 256);
-        imgData.data[i + 3] = 255;
-      }
+    // 왼쪽 위부터 devCounter개의 점을 색을 바꿔가며 찍기
+    const totalPixels = width * height;
+    const pixelCount = Math.min(devCounter, totalPixels);
+    for (let p = 0; p < pixelCount; p++) {
+      const idx = p * 4;
+      // HSL 기반으로 색 순환 (골든 앵글)
+      const hue = (p * 137.508) % 360;
+      const [r, g, b] = hslToRgb(hue, 80, 60);
+      imgData.data[idx] = r;
+      imgData.data[idx + 1] = g;
+      imgData.data[idx + 2] = b;
+      imgData.data[idx + 3] = 255;
     }
 
     // store에서 직접 읽어 stale closure 방지
