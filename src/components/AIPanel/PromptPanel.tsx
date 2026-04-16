@@ -150,10 +150,16 @@ export default function PromptPanel({
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+            e.preventDefault();
+            handleGenerate();
+          }
+        }}
         placeholder={
           hasCanvasContent
-            ? "현재 이미지를 참조하여 수정합니다..."
-            : "만들고 싶은 스프라이트를 설명하세요..."
+            ? "현재 이미지를 참조하여 수정합니다... (Ctrl+Enter로 생성)"
+            : "만들고 싶은 스프라이트를 설명하세요... (Ctrl+Enter로 생성)"
         }
         rows={3}
         className="px-2 py-1.5 text-sm bg-gray-700 rounded border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
