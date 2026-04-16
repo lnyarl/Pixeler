@@ -21,6 +21,7 @@ import InpaintControls from "./components/AIPanel/InpaintControls";
 import HistoryPanel from "./components/History/HistoryPanel";
 import ExportButton from "./components/Export/ExportButton";
 import { useGenerationStore } from "./stores/generationStore";
+import { useResponsive } from "./hooks/useResponsive";
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -29,6 +30,8 @@ function App() {
   );
   const [processedDrafts, setProcessedDrafts] = useState<ProcessedDraft[]>([]);
   const isGenerating = useGenerationStore((s) => s.status === "loading");
+  const breakpoint = useResponsive();
+  const isMobile = breakpoint === "mobile";
 
   const handleImageReady = useCallback(
     (imageData: ImageData) => {
@@ -41,6 +44,30 @@ function App() {
     () => canvasHandle?.getImageData() ?? null,
     [canvasHandle]
   );
+
+  if (isMobile) {
+    return (
+      <div className="h-screen flex flex-col bg-gray-900 text-white">
+        <Header onSettingsClick={() => setSettingsOpen(true)} />
+        <div className="flex-1 flex flex-col overflow-auto p-3 gap-3">
+          <ProviderSelector />
+          <PromptPanel
+            getCanvasImageData={getCanvasImageData}
+            onImageReady={handleImageReady}
+            onDraftsReady={setProcessedDrafts}
+          />
+          <ErrorDisplay />
+          <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
+          <ExportButton getCanvasImageData={getCanvasImageData} />
+          <hr className="border-gray-700" />
+          <HistoryPanel onRestore={handleImageReady} />
+        </div>
+        {settingsOpen && (
+          <ApiKeySettings onClose={() => setSettingsOpen(false)} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-900 text-white">
