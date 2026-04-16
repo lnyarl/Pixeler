@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { hexToRgba, screenToPixel, fillPixels } from "@/utils/pixelOps";
+import { UndoRedoManager } from "@/utils/undoRedoManager";
 import GridOverlay from "./GridOverlay";
 
 const MIN_SCALE = 1;
@@ -19,6 +20,8 @@ export default function PixelCanvas() {
   const [showGrid, setShowGrid] = useState(true);
   const imageDataRef = useRef<ImageData | null>(null);
   const isDrawingRef = useRef(false);
+  const undoManagerRef = useRef(new UndoRedoManager());
+  const [, forceUpdate] = useState(0);
 
   const calcFitScale = useCallback(() => {
     const container = containerRef.current;
@@ -40,6 +43,8 @@ export default function PixelCanvas() {
     if (!ctx) return;
     imageDataRef.current = ctx.createImageData(resolution, resolution);
     ctx.putImageData(imageDataRef.current, 0, 0);
+    undoManagerRef.current.clear();
+    forceUpdate((n) => n + 1);
   }, [resolution]);
 
   // fit scale
@@ -60,7 +65,6 @@ export default function PixelCanvas() {
     });
   }, []);
 
-  // 캔버스에 현재 ImageData 렌더링
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const imgData = imageDataRef.current;
@@ -70,13 +74,54 @@ export default function PixelCanvas() {
     ctx.putImageData(imgData, 0, 0);
   }, []);
 
-  // 드로잉: 한 점 찍기
+  // undo
+  const handleUndo = useCallback(() => {
+    const imgData = imageDataRef.current;
+    if (!imgData) return;
+    const prev = undoManagerRef.current.undo(imgData);
+    if (prev) {
+      imageDataRef.current = prev;
+      renderCanvas();
+      forceUpdate((n) => n + 1);
+    }
+  }, [renderCanvas]);
+
+  // redo
+  const handleRedo = useCallback(() => {
+    const imgData = imageDataRef.current;
+    if (!imgData) return;
+    const next = undoManagerRef.current.redo(imgData);
+    if (next) {
+      imageDataRef.current = next;
+      renderCanvas();
+      forceUpdate((n) => n + 1);
+    }
+  }, [renderCanvas]);
+
+  // 키보드 단축키
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if (
+        (e.ctrlKey && e.shiftKey && e.key === "Z") ||
+        (e.ctrlKey && e.key === "y")
+      ) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleUndo, handleRedo]);
+
+  // 드로잉
   const drawAt = useCallback(
     (clientX: number, clientY: number) => {
       const canvas = canvasRef.current;
       const imgData = imageDataRef.current;
       if (!canvas || !imgData) return;
-
       const wrapper = canvas.parentElement;
       if (!wrapper) return;
       const rect = wrapper.getBoundingClientRect();
@@ -85,7 +130,6 @@ export default function PixelCanvas() {
 
       const rgba: [number, number, number, number] =
         currentTool === "eraser" ? [0, 0, 0, 0] : hexToRgba(currentColor);
-
       fillPixels(imgData, pixel.x, pixel.y, brushSize, rgba);
       renderCanvas();
     },
@@ -95,6 +139,11 @@ export default function PixelCanvas() {
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return;
+      // 그리기 시작 전 스냅샷 저장
+      if (imageDataRef.current) {
+        undoManagerRef.current.pushSnapshot(imageDataRef.current);
+        forceUpdate((n) => n + 1);
+      }
       isDrawingRef.current = true;
       drawAt(e.clientX, e.clientY);
     },
@@ -113,6 +162,7 @@ export default function PixelCanvas() {
     isDrawingRef.current = false;
   }, []);
 
+  const um = undoManagerRef.current;
   const scaledSize = resolution * scale;
 
   return (
@@ -153,6 +203,20 @@ export default function PixelCanvas() {
           }`}
         >
           그리드
+        </button>
+        <button
+          onClick={handleUndo}
+          disabled={!um.canUndo}
+          className="px-2 py-1 text-xs rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Undo
+        </button>
+        <button
+          onClick={handleRedo}
+          disabled={!um.canRedo}
+          className="px-2 py-1 text-xs rounded bg-gray-700 text-gray-300 hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Redo
         </button>
       </div>
 
