@@ -22,6 +22,7 @@ import HistoryPanel from "./components/History/HistoryPanel";
 import ExportButton from "./components/Export/ExportButton";
 import { useGenerationStore } from "./stores/generationStore";
 import { useResponsive } from "./hooks/useResponsive";
+import { useBeforeUnload } from "./hooks/useBeforeUnload";
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -31,6 +32,7 @@ function App() {
   const [processedDrafts, setProcessedDrafts] = useState<ProcessedDraft[]>([]);
   const isGenerating = useGenerationStore((s) => s.status === "loading");
   const breakpoint = useResponsive();
+  useBeforeUnload();
   const isMobile = breakpoint === "mobile";
 
   const handleImageReady = useCallback(

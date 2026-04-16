@@ -134,9 +134,15 @@ export default function PromptPanel({
   }
 
   const buttonLabel = hasCanvasContent ? "수정 생성" : "생성";
+  const currentApiKey = apiKeys[selectedProvider];
 
   return (
     <div className="flex flex-col gap-2">
+      {!currentApiKey && (
+        <div className="bg-yellow-900/30 border border-yellow-700 rounded p-2 text-xs text-yellow-300">
+          API 키가 설정되지 않았습니다. 우측 상단 ⚙ 버튼에서 설정해주세요.
+        </div>
+      )}
       <label className="text-xs text-gray-400 font-medium">프롬프트</label>
       <textarea
         value={prompt}
