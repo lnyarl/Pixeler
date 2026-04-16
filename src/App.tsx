@@ -20,6 +20,7 @@ import DraftGrid from "./components/AIPanel/DraftGrid";
 import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
 import LoadingIndicator from "./components/AIPanel/LoadingIndicator";
 import FeedbackInput from "./components/AIPanel/FeedbackInput";
+import InpaintControls from "./components/AIPanel/InpaintControls";
 import HistoryPanel from "./components/History/HistoryPanel";
 
 function App() {
@@ -64,6 +65,10 @@ function App() {
           <ErrorDisplay />
           <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
           <FeedbackInput
+            getCanvasImageData={() => canvasHandle?.getImageData() ?? null}
+            onImageReady={handleImageReady}
+          />
+          <InpaintControls
             getCanvasImageData={() => canvasHandle?.getImageData() ?? null}
             onImageReady={handleImageReady}
           />

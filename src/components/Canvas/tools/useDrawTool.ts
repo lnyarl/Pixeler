@@ -75,15 +75,31 @@ export function useDrawTool({
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return;
-      if (currentTool === "mask") return;
 
       const imgData = imageDataRef.current;
       if (!imgData) return;
 
-      // 스냅샷 저장 (undo용)
+      isDrawingRef.current = true;
+
+      if (currentTool === "mask") {
+        const pixel = getPixel(e.clientX, e.clientY);
+        if (pixel) {
+          let mask = useCanvasStore.getState().maskData;
+          if (!mask) {
+            mask = new ImageData(width, height);
+          }
+          fillPixels(mask, pixel.x, pixel.y, brushSize, [255, 255, 255, 255]);
+          lastPixelRef.current = pixel;
+          useCanvasStore.getState().setMaskData(new ImageData(
+            new Uint8ClampedArray(mask.data), mask.width, mask.height
+          ));
+        }
+        return;
+      }
+
+      // 스냅샷 저장 (undo용) — mask 모드 제외
       undoManager.pushSnapshot(imgData);
       onStateChange();
-      isDrawingRef.current = true;
 
       if (currentTool === "move") {
         const pixel = getPixelUnbounded(e.clientX, e.clientY);
@@ -116,6 +132,24 @@ export function useDrawTool({
       if (!isDrawingRef.current) return;
       const imgData = imageDataRef.current;
       if (!imgData) return;
+
+      if (currentTool === "mask") {
+        const pixel = getPixel(e.clientX, e.clientY);
+        if (!pixel) return;
+        const mask = useCanvasStore.getState().maskData;
+        if (!mask) return;
+        const last = lastPixelRef.current;
+        if (last && (last.x !== pixel.x || last.y !== pixel.y)) {
+          drawLine(mask, last.x, last.y, pixel.x, pixel.y, brushSize, [255, 255, 255, 255]);
+        } else {
+          fillPixels(mask, pixel.x, pixel.y, brushSize, [255, 255, 255, 255]);
+        }
+        lastPixelRef.current = pixel;
+        useCanvasStore.getState().setMaskData(new ImageData(
+          new Uint8ClampedArray(mask.data), mask.width, mask.height
+        ));
+        return;
+      }
 
       if (currentTool === "move") {
         const pixel = getPixelUnbounded(e.clientX, e.clientY);

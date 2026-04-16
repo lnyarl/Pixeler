@@ -15,12 +15,15 @@ export interface CanvasState {
   currentColor: string;
   brushSize: number;
   dirty: boolean;
+  maskData: ImageData | null;
   setResolution: (width: number, height: number) => void;
   setLinked: (linked: boolean) => void;
   setCurrentTool: (tool: ToolType) => void;
   setCurrentColor: (color: string) => void;
   setBrushSize: (size: number) => void;
   setDirty: (dirty: boolean) => void;
+  setMaskData: (mask: ImageData | null) => void;
+  clearMask: () => void;
 }
 
 export function isValidResolution(value: number): boolean {
@@ -39,6 +42,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   currentColor: "#ffffff",
   brushSize: 1,
   dirty: false,
+  maskData: null,
   setResolution: (width, height) => {
     if (isValidResolution(width) && isValidResolution(height)) {
       set({ width, height, dirty: false });
@@ -52,6 +56,8 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       set({ brushSize: size });
     }
   },
+  setMaskData: (mask) => set({ maskData: mask }),
+  clearMask: () => set({ maskData: null }),
   setDirty: (dirty) => set({ dirty }),
 }));
 

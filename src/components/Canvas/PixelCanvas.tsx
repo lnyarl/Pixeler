@@ -6,6 +6,7 @@ import GridOverlay from "./GridOverlay";
 import ZoomControl from "@/components/Toolbar/ZoomControl";
 import UndoRedoButtons from "@/components/Toolbar/UndoRedoButtons";
 import MiniPreview from "./MiniPreview";
+import MaskOverlay from "./MaskOverlay";
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 64;
@@ -200,6 +201,7 @@ export default function PixelCanvas({ onReady }: PixelCanvasProps) {
   const zoomOut = useCallback(() => setScale((s) => Math.max(MIN_SCALE, s - 1)), []);
 
   const currentTool = useCanvasStore((s) => s.currentTool);
+  const maskData = useCanvasStore((s) => s.maskData);
   const um = undoManagerRef.current;
   const scaledW = width * scale;
   const scaledH = height * scale;
@@ -228,6 +230,12 @@ export default function PixelCanvas({ onReady }: PixelCanvasProps) {
             width: scaledW,
             height: scaledH,
           }}
+        />
+        <MaskOverlay
+          width={width}
+          height={height}
+          scale={scale}
+          maskData={maskData}
         />
         <GridOverlay
           width={width}
