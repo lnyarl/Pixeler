@@ -4,6 +4,9 @@ import Sidebar from "./components/Layout/Sidebar";
 import MainArea from "./components/Layout/MainArea";
 import AIPanel from "./components/Layout/AIPanel";
 import ResolutionSelector from "./components/Toolbar/ResolutionSelector";
+import ToolSelector from "./components/Toolbar/ToolSelector";
+import ColorPicker from "./components/Toolbar/ColorPicker";
+import BrushSizeSelector from "./components/Toolbar/BrushSizeSelector";
 import PixelCanvas from "./components/Canvas/PixelCanvas";
 
 function App() {
@@ -14,6 +17,10 @@ function App() {
       <Header onSettingsClick={() => setSettingsOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar>
+          <ToolSelector />
+          <ColorPicker />
+          <BrushSizeSelector />
+          <hr className="border-gray-700" />
           <ResolutionSelector />
         </Sidebar>
         <MainArea>
