@@ -20,6 +20,7 @@ export default function InpaintControls({
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   const maskData = useCanvasStore((s) => s.maskData);
   const clearMask = useCanvasStore((s) => s.clearMask);
@@ -68,6 +69,8 @@ export default function InpaintControls({
 
     setLoading(true);
     setError("");
+    const controller = new AbortController();
+    setAbortController(controller);
 
     try {
       const adapter = createAdapter(selectedProvider, apiKey);
@@ -86,6 +89,7 @@ export default function InpaintControls({
         mask: maskBase64,
         width,
         height,
+        signal: controller.signal,
       });
 
       const rawImageData = await base64ToImageData(result.base64);
@@ -114,6 +118,7 @@ export default function InpaintControls({
       setError(err instanceof Error ? err.message : "알 수 없는 오류");
     } finally {
       setLoading(false);
+      setAbortController(null);
     }
   }
 
@@ -132,17 +137,21 @@ export default function InpaintControls({
             className="px-2 py-1.5 text-sm bg-gray-700 rounded border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
           />
           <div className="flex gap-1">
-            <button
-              onClick={handleInpaint}
-              disabled={loading}
-              className={`flex-1 px-3 py-1.5 text-xs rounded transition-colors ${
-                loading
-                  ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                  : "bg-purple-700 text-white hover:bg-purple-600"
-              }`}
-            >
-              {loading ? "수정 중..." : "부분 수정"}
-            </button>
+            {loading ? (
+              <button
+                onClick={() => abortController?.abort()}
+                className="flex-1 px-3 py-1.5 text-xs bg-red-700 text-white rounded hover:bg-red-600 transition-colors"
+              >
+                취소
+              </button>
+            ) : (
+              <button
+                onClick={handleInpaint}
+                className="flex-1 px-3 py-1.5 text-xs bg-purple-700 text-white rounded hover:bg-purple-600 transition-colors"
+              >
+                부분 수정
+              </button>
+            )}
             <button
               onClick={clearMask}
               className="px-3 py-1.5 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600"

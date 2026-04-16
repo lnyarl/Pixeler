@@ -1,5 +1,5 @@
 const MAX_RETRIES = 3;
-const TIMEOUT_MS = 60_000;
+const TIMEOUT_MS = 30_000;
 
 interface FetchWithRetryOptions {
   signal?: AbortSignal;
