@@ -125,7 +125,8 @@ export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
         data.height
       );
       renderCanvas();
-      useCanvasStore.getState().setDirty(true);
+      // 로드는 dirty가 아님. 사용자가 직접 그려야 dirty.
+      useCanvasStore.getState().setDirty(false);
       triggerUpdate();
     },
     [renderCanvas, triggerUpdate]
