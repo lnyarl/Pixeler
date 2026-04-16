@@ -38,6 +38,7 @@ export default function PromptPanel({
   const viewType = useSettingsStore((s) => s.viewType);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const addHistoryItem = useHistoryStore((s) => s.addItem);
+  const historyItems = useHistoryStore((s) => s.items);
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
@@ -63,11 +64,17 @@ export default function PromptPanel({
       let results: GeneratedImage[];
 
       if (hasCanvasContent && adapter.regenerateWithFeedback) {
-        // 캔버스에 이미지가 있으면 참조 이미지로 첨부
+        // 이전 대화 맥락 구성 (최근 5개까지)
+        const recentHistory = historyItems
+          .slice(0, 5)
+          .reverse()
+          .map((h) => h.prompt)
+          .join(" → ");
+
         const referenceBase64 = imageDataToBase64(canvasData!);
         results = await adapter.regenerateWithFeedback({
           prompt,
-          originalPrompt: "",
+          originalPrompt: recentHistory,
           referenceImage: referenceBase64,
           width,
           height,
