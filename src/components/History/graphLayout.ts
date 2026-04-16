@@ -23,7 +23,8 @@ export interface GraphLayout {
 
 /**
  * 히스토리 항목들을 git graph 레이아웃으로 변환.
- * 최신이 위(row 0), 오래된 것이 아래.
+ * 메인 라인: 가장 먼저 생성된 자식이 부모와 같은 레인(직선).
+ * 분기: 나중에 생성된 자식이 오른쪽으로 삐져나감.
  */
 export function computeGraphLayout(items: HistoryItem[]): GraphLayout {
   if (items.length === 0) {
@@ -33,7 +34,6 @@ export function computeGraphLayout(items: HistoryItem[]): GraphLayout {
   const map = new Map<string, HistoryItem>();
   for (const item of items) map.set(item.id, item);
 
-  // 자식 맵 구성
   const childrenMap = new Map<string, HistoryItem[]>();
   const roots: HistoryItem[] = [];
 
@@ -47,19 +47,18 @@ export function computeGraphLayout(items: HistoryItem[]): GraphLayout {
     }
   }
 
-  // 시간순 정렬 (최신 먼저)
-  roots.sort((a, b) => b.timestamp - a.timestamp);
+  // 오래된 먼저 정렬 (메인 라인이 먼저 생성된 자식)
+  roots.sort((a, b) => a.timestamp - b.timestamp);
   for (const [, children] of childrenMap) {
-    children.sort((a, b) => b.timestamp - a.timestamp);
+    children.sort((a, b) => a.timestamp - b.timestamp);
   }
 
-  // DFS로 레인 할당 + 행 배정
   const nodes: GraphNode[] = [];
   const lines: GraphLine[] = [];
-  const activeLanes = new Set<number>();
   let currentRow = 0;
+  const activeLanes = new Set<number>();
 
-  function getFreeLane(): number {
+  function getFreeLaneRight(): number {
     let lane = 0;
     while (activeLanes.has(lane)) lane++;
     return lane;
@@ -78,38 +77,33 @@ export function computeGraphLayout(items: HistoryItem[]): GraphLayout {
     nodes.push(node);
 
     if (children.length === 0) {
-      // 리프: 레인 반환
       activeLanes.delete(lane);
       return node;
     }
 
-    // 분기가 있으면(자식 2+) 나머지 자식용 레인을 먼저 확보
+    // 분기용 레인 미리 예약 (2번째 자식부터 오른쪽으로)
     const branchLanes: number[] = [];
     for (let i = 1; i < children.length; i++) {
-      const newLane = getFreeLane();
-      activeLanes.add(newLane); // 미리 예약
+      const newLane = getFreeLaneRight();
+      activeLanes.add(newLane);
       branchLanes.push(newLane);
     }
 
-    // 첫 번째 자식은 같은 레인
-    const firstChild = dfs(children[0], lane);
-    node.children.push(firstChild);
+    // 첫 자식(가장 오래된) = 메인 라인, 같은 레인 직선
+    const mainChild = dfs(children[0], lane);
+    node.children.push(mainChild);
     lines.push({
-      fromRow: node.row,
-      fromLane: node.lane,
-      toRow: firstChild.row,
-      toLane: firstChild.lane,
+      fromRow: node.row, fromLane: lane,
+      toRow: mainChild.row, toLane: mainChild.lane,
     });
 
-    // 나머지 자식은 예약해둔 레인 사용
+    // 나머지 자식 = 분기, 오른쪽으로 삐져나감
     for (let i = 1; i < children.length; i++) {
-      const childNode = dfs(children[i], branchLanes[i - 1]);
-      node.children.push(childNode);
+      const branchChild = dfs(children[i], branchLanes[i - 1]);
+      node.children.push(branchChild);
       lines.push({
-        fromRow: node.row,
-        fromLane: node.lane,
-        toRow: childNode.row,
-        toLane: childNode.lane,
+        fromRow: node.row, fromLane: lane,
+        toRow: branchChild.row, toLane: branchChild.lane,
       });
     }
 
@@ -117,11 +111,10 @@ export function computeGraphLayout(items: HistoryItem[]): GraphLayout {
   }
 
   for (const root of roots) {
-    const lane = getFreeLane();
+    const lane = getFreeLaneRight();
     dfs(root, lane);
   }
 
   const maxLane = nodes.reduce((max, n) => Math.max(max, n.lane), 0);
-
   return { nodes, lines, maxLane, rowCount: currentRow };
 }
