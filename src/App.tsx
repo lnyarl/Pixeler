@@ -13,13 +13,10 @@ import PixelCanvas from "./components/Canvas/PixelCanvas";
 import type { PixelCanvasHandle } from "./components/Canvas/PixelCanvas";
 import ApiKeySettings from "./components/Settings/ApiKeySettings";
 import ProviderSelector from "./components/Settings/ProviderSelector";
-import PromptInput from "./components/AIPanel/PromptInput";
-import GenerateButton from "./components/AIPanel/GenerateButton";
-import type { ProcessedDraft } from "./components/AIPanel/GenerateButton";
+import PromptPanel from "./components/AIPanel/PromptPanel";
+import type { ProcessedDraft } from "./components/AIPanel/PromptPanel";
 import DraftGrid from "./components/AIPanel/DraftGrid";
 import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
-import LoadingIndicator from "./components/AIPanel/LoadingIndicator";
-import FeedbackInput from "./components/AIPanel/FeedbackInput";
 import InpaintControls from "./components/AIPanel/InpaintControls";
 import HistoryPanel from "./components/History/HistoryPanel";
 
@@ -34,6 +31,11 @@ function App() {
     (imageData: ImageData) => {
       canvasHandle?.loadImageData(imageData);
     },
+    [canvasHandle]
+  );
+
+  const getCanvasImageData = useCallback(
+    () => canvasHandle?.getImageData() ?? null,
     [canvasHandle]
   );
 
@@ -56,20 +58,15 @@ function App() {
         <AIPanel>
           <ProviderSelector />
           <hr className="border-gray-700" />
-          <PromptInput />
-          <GenerateButton
+          <PromptPanel
+            getCanvasImageData={getCanvasImageData}
             onImageReady={handleImageReady}
             onDraftsReady={setProcessedDrafts}
           />
-          <LoadingIndicator />
           <ErrorDisplay />
           <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
-          <FeedbackInput
-            getCanvasImageData={() => canvasHandle?.getImageData() ?? null}
-            onImageReady={handleImageReady}
-          />
           <InpaintControls
-            getCanvasImageData={() => canvasHandle?.getImageData() ?? null}
+            getCanvasImageData={getCanvasImageData}
             onImageReady={handleImageReady}
           />
           <hr className="border-gray-700" />
