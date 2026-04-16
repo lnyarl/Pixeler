@@ -1,0 +1,27 @@
+node_modules
+dist
+*.local
+.env
+.env.*
+!.env.example
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Testing
+test-results/
+playwright-report/
+blob-report/
+
+# Build
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Workspace (intermediate build artifacts)
+_workspace/
