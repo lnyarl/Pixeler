@@ -12,6 +12,7 @@ const MAX_SCALE = 64;
 
 export interface PixelCanvasHandle {
   loadImageData: (data: ImageData) => void;
+  getImageData: () => ImageData | null;
 }
 
 interface PixelCanvasProps {
@@ -129,10 +130,20 @@ export default function PixelCanvas({ onReady }: PixelCanvasProps) {
     [renderCanvas, triggerUpdate]
   );
 
+  const getImageData = useCallback(() => {
+    return imageDataRef.current
+      ? new ImageData(
+          new Uint8ClampedArray(imageDataRef.current.data),
+          imageDataRef.current.width,
+          imageDataRef.current.height
+        )
+      : null;
+  }, []);
+
   // onReady 콜백으로 handle 전달
   useEffect(() => {
-    onReady?.({ loadImageData });
-  }, [onReady, loadImageData]);
+    onReady?.({ loadImageData, getImageData });
+  }, [onReady, loadImageData, getImageData]);
 
   // undo / redo
   const handleUndo = useCallback(() => {
