@@ -4,6 +4,7 @@ import Sidebar from "./components/Layout/Sidebar";
 import MainArea from "./components/Layout/MainArea";
 import AIPanel from "./components/Layout/AIPanel";
 import ResolutionSelector from "./components/Toolbar/ResolutionSelector";
+import PixelCanvas from "./components/Canvas/PixelCanvas";
 
 function App() {
   const [_settingsOpen, setSettingsOpen] = useState(false);
@@ -15,7 +16,9 @@ function App() {
         <Sidebar>
           <ResolutionSelector />
         </Sidebar>
-        <MainArea />
+        <MainArea>
+          <PixelCanvas />
+        </MainArea>
         <AIPanel />
       </div>
     </div>
