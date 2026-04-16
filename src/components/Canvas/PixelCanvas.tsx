@@ -5,6 +5,7 @@ import { useDrawTool } from "./tools/useDrawTool";
 import GridOverlay from "./GridOverlay";
 import ZoomControl from "@/components/Toolbar/ZoomControl";
 import UndoRedoButtons from "@/components/Toolbar/UndoRedoButtons";
+import MiniPreview from "./MiniPreview";
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 64;
@@ -27,9 +28,9 @@ export default function PixelCanvas({ onReady }: PixelCanvasProps) {
   const [showGrid, setShowGrid] = useState(true);
   const imageDataRef = useRef<ImageData | null>(null);
   const undoManagerRef = useRef(new UndoRedoManager());
-  const [, forceRender] = useState(0);
+  const [renderKey, setRenderKey] = useState(0);
 
-  const triggerUpdate = useCallback(() => forceRender((n) => n + 1), []);
+  const triggerUpdate = useCallback(() => setRenderKey((n) => n + 1), []);
 
   const calcFitScale = useCallback(() => {
     const container = containerRef.current;
@@ -224,6 +225,13 @@ export default function PixelCanvas({ onReady }: PixelCanvasProps) {
           visible={showGrid}
         />
       </div>
+
+      <MiniPreview
+        imageDataRef={imageDataRef}
+        width={width}
+        height={height}
+        renderKey={renderKey}
+      />
 
       <div className="absolute bottom-3 left-3 flex gap-2 items-center">
         <button
