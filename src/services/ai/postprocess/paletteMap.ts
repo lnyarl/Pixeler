@@ -21,18 +21,21 @@ export function paletteMap(
     }
   }
 
+  // 거의 투명한 픽셀은 항상 완전 투명으로 처리
+  for (let i = 0; i < dst.data.length; i += 4) {
+    if (dst.data[i + 3] <= 128) {
+      dst.data[i + 3] = 0;
+    }
+  }
+
   if (pixels.length === 0) return dst;
 
   // K-means 클러스터링으로 팔레트 추출
   const palette = kMeans(pixels, targetColors, 10);
 
-  // 모든 불투명 픽셀을 가장 가까운 팔레트 색으로 매핑
+  // 불투명 픽셀을 가장 가까운 팔레트 색으로 매핑
   for (let i = 0; i < dst.data.length; i += 4) {
-    if (dst.data[i + 3] <= 128) {
-      // 거의 투명한 픽셀은 완전 투명으로
-      dst.data[i + 3] = 0;
-      continue;
-    }
+    if (dst.data[i + 3] === 0) continue;
 
     const r = dst.data[i];
     const g = dst.data[i + 1];
