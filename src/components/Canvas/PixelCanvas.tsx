@@ -117,15 +117,16 @@ export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
   // 외부에서 이미지 로드 (AI 생성 결과, 히스토리 복원 등)
   const loadImageData = useCallback(
     (data: ImageData) => {
-      // AI 생성/히스토리 복원 시 undo 스택 클리어 (새 작업 시작)
-      undoManagerRef.current.clear();
+      // 현재 상태를 undo 스택에 저장 (히스토리 이동도 undo 가능)
+      if (imageDataRef.current) {
+        undoManagerRef.current.pushSnapshot(imageDataRef.current);
+      }
       imageDataRef.current = new ImageData(
         new Uint8ClampedArray(data.data),
         data.width,
         data.height
       );
       renderCanvas();
-      // 로드는 dirty가 아님. 사용자가 직접 그려야 dirty.
       useCanvasStore.getState().setDirty(false);
       triggerUpdate();
     },
