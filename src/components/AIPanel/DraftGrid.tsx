@@ -1,4 +1,5 @@
-import type { ProcessedDraft } from "./GenerateButton";
+import type { ProcessedDraft } from "./PromptPanel";
+import { useHistoryStore } from "@/stores/historyStore";
 
 interface DraftGridProps {
   drafts: ProcessedDraft[];
@@ -6,7 +7,14 @@ interface DraftGridProps {
 }
 
 export default function DraftGrid({ drafts, onSelect }: DraftGridProps) {
+  const setActiveItemId = useHistoryStore((s) => s.setActiveItemId);
+
   if (!drafts || drafts.length <= 1) return null;
+
+  function handleSelect(draft: ProcessedDraft) {
+    onSelect(draft.imageData);
+    setActiveItemId(draft.historyId);
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -16,8 +24,8 @@ export default function DraftGrid({ drafts, onSelect }: DraftGridProps) {
       <div className="grid grid-cols-2 gap-1">
         {drafts.map((item, i) => (
           <button
-            key={i}
-            onClick={() => onSelect(item.imageData)}
+            key={item.historyId}
+            onClick={() => handleSelect(item)}
             className="aspect-square bg-gray-700 rounded border border-gray-600 hover:border-blue-500 overflow-hidden transition-colors"
             title={`초안 ${i + 1}`}
           >

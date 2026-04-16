@@ -10,6 +10,7 @@ import type { GeneratedImage } from "@/services/ai/types";
 export interface ProcessedDraft {
   draft: GeneratedImage;
   imageData: ImageData;
+  historyId: string;
 }
 
 interface PromptPanelProps {
@@ -39,6 +40,7 @@ export default function PromptPanel({
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const addHistoryItem = useHistoryStore((s) => s.addItem);
   const historyItems = useHistoryStore((s) => s.items);
+  const activeItemId = useHistoryStore((s) => s.activeItemId);
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
@@ -93,31 +95,31 @@ export default function PromptPanel({
         });
       }
 
-      const processed: ProcessedDraft[] = await Promise.all(
-        results.map(async (draft) => {
-          const rawImageData = await base64ToImageData(draft.base64);
-          const imageData = runPostProcess(rawImageData, {
-            targetWidth: width,
-            targetHeight: height,
-            providerType: selectedProvider,
-            paletteSize,
-          });
-          return { draft, imageData };
-        })
-      );
+      // parentId를 생성 전에 캡처 (다중 초안 시 모두 같은 부모)
+      const parentId = hasCanvasContent ? activeItemId : null;
+      const historyType = hasCanvasContent ? "feedback" : "generate";
+
+      const processed: ProcessedDraft[] = [];
+      for (const result of results) {
+        const rawImageData = await base64ToImageData(result.base64);
+        const imageData = runPostProcess(rawImageData, {
+          targetWidth: width,
+          targetHeight: height,
+          providerType: selectedProvider,
+          paletteSize,
+        });
+        const historyId = addHistoryItem({
+          prompt,
+          thumbnail: result.base64,
+          imageData,
+          type: historyType,
+          parentId,
+        });
+        processed.push({ draft: result, imageData, historyId });
+      }
 
       setDrafts(results);
       onDraftsReady?.(processed);
-
-      const historyType = hasCanvasContent ? "feedback" : "generate";
-      for (const item of processed) {
-        addHistoryItem({
-          prompt,
-          thumbnail: item.draft.base64,
-          imageData: item.imageData,
-          type: historyType,
-        });
-      }
 
       if (processed.length === 1) {
         onImageReady(processed[0].imageData);

@@ -16,6 +16,7 @@ describe("historyStore", () => {
       thumbnail: "base64...",
       imageData: makeImageData(),
       type: "generate",
+      parentId: null,
     });
 
     expect(useHistoryStore.getState().items).toHaveLength(1);
@@ -29,12 +30,14 @@ describe("historyStore", () => {
       thumbnail: "",
       imageData: makeImageData(),
       type: "generate",
+      parentId: null,
     });
     useHistoryStore.getState().addItem({
       prompt: "두번째",
       thumbnail: "",
       imageData: makeImageData(),
       type: "feedback",
+      parentId: null,
     });
 
     expect(useHistoryStore.getState().items[0].prompt).toBe("두번째");
@@ -48,6 +51,7 @@ describe("historyStore", () => {
         thumbnail: "",
         imageData: makeImageData(),
         type: "generate",
+        parentId: null,
       });
     }
 
@@ -61,6 +65,7 @@ describe("historyStore", () => {
       thumbnail: "",
       imageData: makeImageData(),
       type: "generate",
+      parentId: null,
     });
     useHistoryStore.getState().clear();
     expect(useHistoryStore.getState().items).toHaveLength(0);
@@ -72,6 +77,7 @@ describe("historyStore", () => {
       thumbnail: "",
       imageData: makeImageData(),
       type: "generate",
+      parentId: null,
     });
 
     const item = useHistoryStore.getState().items[0];

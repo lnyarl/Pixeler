@@ -31,6 +31,7 @@ export default function InpaintControls({
   const apiKeys = useSettingsStore((s) => s.apiKeys);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const addHistoryItem = useHistoryStore((s) => s.addItem);
+  const activeItemId = useHistoryStore((s) => s.activeItemId);
 
   const capabilities = getProviderCapabilities(selectedProvider);
   const hasMask = maskData !== null;
@@ -103,6 +104,7 @@ export default function InpaintControls({
         thumbnail: result.base64,
         imageData: composited,
         type: "inpaint",
+        parentId: activeItemId,
       });
 
       onImageReady(composited);
