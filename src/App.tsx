@@ -19,6 +19,7 @@ import type { ProcessedDraft } from "./components/AIPanel/GenerateButton";
 import DraftGrid from "./components/AIPanel/DraftGrid";
 import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
 import LoadingIndicator from "./components/AIPanel/LoadingIndicator";
+import HistoryPanel from "./components/History/HistoryPanel";
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -61,6 +62,8 @@ function App() {
           <LoadingIndicator />
           <ErrorDisplay />
           <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
+          <hr className="border-gray-700" />
+          <HistoryPanel onRestore={handleImageReady} />
         </AIPanel>
       </div>
       {settingsOpen && (
