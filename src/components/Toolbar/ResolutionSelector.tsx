@@ -6,38 +6,66 @@ import {
 } from "@/stores/canvasStore";
 
 export default function ResolutionSelector() {
-  const resolution = useCanvasStore((s) => s.resolution);
+  const width = useCanvasStore((s) => s.width);
+  const height = useCanvasStore((s) => s.height);
+  const linked = useCanvasStore((s) => s.linked);
+  const dirty = useCanvasStore((s) => s.dirty);
   const setResolution = useCanvasStore((s) => s.setResolution);
-  const [customInput, setCustomInput] = useState("");
+  const setLinked = useCanvasStore((s) => s.setLinked);
+
+  const [customW, setCustomW] = useState("");
+  const [customH, setCustomH] = useState("");
   const [error, setError] = useState("");
 
-  const isPreset = (RESOLUTION_PRESETS as readonly number[]).includes(
-    resolution
-  );
+  function confirmChange(newW: number, newH: number) {
+    if (dirty && !window.confirm("현재 편집 내용이 사라집니다. 해상도를 변경하시겠습니까?")) {
+      return;
+    }
+    setResolution(newW, newH);
+    setCustomW("");
+    setCustomH("");
+    setError("");
+  }
 
   function handlePresetClick(preset: number) {
-    setResolution(preset);
-    setCustomInput("");
-    setError("");
+    confirmChange(preset, preset);
   }
 
   function handleCustomSubmit() {
-    const value = parseInt(customInput, 10);
-    if (isNaN(value)) {
+    const w = parseInt(customW, 10);
+    const h = linked ? w : parseInt(customH, 10);
+
+    if (isNaN(w) || (!linked && isNaN(h))) {
       setError("숫자를 입력해주세요");
       return;
     }
-    if (!isValidResolution(value)) {
+    if (!isValidResolution(w) || !isValidResolution(h)) {
       setError("8~128 범위의 정수를 입력해주세요");
       return;
     }
-    setResolution(value);
-    setError("");
+    confirmChange(w, h);
   }
+
+  const isPreset =
+    width === height &&
+    (RESOLUTION_PRESETS as readonly number[]).includes(width);
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-xs text-gray-400 font-medium">해상도</label>
+      <div className="flex items-center justify-between">
+        <label className="text-xs text-gray-400 font-medium">해상도</label>
+        <button
+          onClick={() => setLinked(!linked)}
+          className={`text-xs px-1.5 py-0.5 rounded transition-colors ${
+            linked
+              ? "bg-blue-600 text-white"
+              : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+          }`}
+          title={linked ? "가로세로 연동 (클릭하여 분리)" : "가로세로 분리 (클릭하여 연동)"}
+        >
+          {linked ? "🔗" : "↔"}
+        </button>
+      </div>
 
       <div className="flex gap-1">
         {RESOLUTION_PRESETS.map((preset) => (
@@ -45,7 +73,7 @@ export default function ResolutionSelector() {
             key={preset}
             onClick={() => handlePresetClick(preset)}
             className={`flex-1 px-2 py-1 text-xs rounded transition-colors ${
-              resolution === preset
+              width === preset && height === preset
                 ? "bg-blue-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
@@ -55,19 +83,39 @@ export default function ResolutionSelector() {
         ))}
       </div>
 
-      <div className="flex gap-1">
+      <div className="flex gap-1 items-center">
         <input
           type="number"
           min={8}
           max={128}
-          placeholder="커스텀"
-          value={customInput}
-          onChange={(e) => setCustomInput(e.target.value)}
+          placeholder={linked ? "크기" : "가로"}
+          value={customW}
+          onChange={(e) => {
+            setCustomW(e.target.value);
+            if (linked) setCustomH(e.target.value);
+          }}
           onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit()}
           className={`flex-1 px-2 py-1 text-xs bg-gray-700 rounded border ${
             error ? "border-red-500" : "border-gray-600"
           } text-white placeholder-gray-500 focus:outline-none focus:border-blue-500`}
         />
+        {!linked && (
+          <>
+            <span className="text-gray-500 text-xs">×</span>
+            <input
+              type="number"
+              min={8}
+              max={128}
+              placeholder="세로"
+              value={customH}
+              onChange={(e) => setCustomH(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit()}
+              className={`flex-1 px-2 py-1 text-xs bg-gray-700 rounded border ${
+                error ? "border-red-500" : "border-gray-600"
+              } text-white placeholder-gray-500 focus:outline-none focus:border-blue-500`}
+            />
+          </>
+        )}
         <button
           onClick={handleCustomSubmit}
           className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
@@ -80,7 +128,7 @@ export default function ResolutionSelector() {
 
       {!isPreset && (
         <p className="text-xs text-gray-500">
-          현재: {resolution}x{resolution}
+          현재: {width}×{height}
         </p>
       )}
     </div>

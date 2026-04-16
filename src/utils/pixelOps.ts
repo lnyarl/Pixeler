@@ -11,7 +11,8 @@ export function screenToPixel(
   mouseX: number,
   mouseY: number,
   canvasRect: DOMRect,
-  resolution: number,
+  width: number,
+  height: number,
   scale: number
 ): { x: number; y: number } | null {
   const localX = mouseX - canvasRect.left;
@@ -19,7 +20,7 @@ export function screenToPixel(
   const x = Math.floor(localX / scale);
   const y = Math.floor(localY / scale);
 
-  if (x < 0 || x >= resolution || y < 0 || y >= resolution) return null;
+  if (x < 0 || x >= width || y < 0 || y >= height) return null;
   return { x, y };
 }
 
@@ -46,6 +47,42 @@ export function fillPixels(
       data[idx + 1] = rgba[1];
       data[idx + 2] = rgba[2];
       data[idx + 3] = rgba[3];
+    }
+  }
+}
+
+/** Bresenham 라인: 두 점 사이를 채움 (빠른 드래그 시 점 누락 방지) */
+export function drawLine(
+  imageData: ImageData,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  brushSize: number,
+  rgba: [number, number, number, number]
+) {
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+
+  let cx = x0;
+  let cy = y0;
+
+  while (true) {
+    fillPixels(imageData, cx, cy, brushSize, rgba);
+
+    if (cx === x1 && cy === y1) break;
+
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      cx += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      cy += sy;
     }
   }
 }

@@ -8,14 +8,19 @@ export type ResolutionPreset = (typeof RESOLUTION_PRESETS)[number];
 export type ToolType = "pen" | "eraser" | "mask";
 
 export interface CanvasState {
-  resolution: number;
+  width: number;
+  height: number;
+  linked: boolean;
   currentTool: ToolType;
   currentColor: string;
   brushSize: number;
-  setResolution: (resolution: number) => void;
+  dirty: boolean;
+  setResolution: (width: number, height: number) => void;
+  setLinked: (linked: boolean) => void;
   setCurrentTool: (tool: ToolType) => void;
   setCurrentColor: (color: string) => void;
   setBrushSize: (size: number) => void;
+  setDirty: (dirty: boolean) => void;
 }
 
 export function isValidResolution(value: number): boolean {
@@ -27,15 +32,19 @@ export function isValidResolution(value: number): boolean {
 }
 
 export const useCanvasStore = create<CanvasState>((set) => ({
-  resolution: 32,
+  width: 32,
+  height: 32,
+  linked: true,
   currentTool: "pen",
   currentColor: "#ffffff",
   brushSize: 1,
-  setResolution: (resolution) => {
-    if (isValidResolution(resolution)) {
-      set({ resolution });
+  dirty: false,
+  setResolution: (width, height) => {
+    if (isValidResolution(width) && isValidResolution(height)) {
+      set({ width, height, dirty: false });
     }
   },
+  setLinked: (linked) => set({ linked }),
   setCurrentTool: (tool) => set({ currentTool: tool }),
   setCurrentColor: (color) => set({ currentColor: color }),
   setBrushSize: (size) => {
@@ -43,6 +52,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
       set({ brushSize: size });
     }
   },
+  setDirty: (dirty) => set({ dirty }),
 }));
 
 export { RESOLUTION_PRESETS, MIN_RESOLUTION, MAX_RESOLUTION };
