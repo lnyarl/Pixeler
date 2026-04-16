@@ -28,7 +28,8 @@ export default function HistoryGraph({
   const svgHeight = layout.rowCount * ROW_HEIGHT;
 
   function laneX(lane: number) {
-    return GUTTER_PAD + lane * LANE_WIDTH + LANE_WIDTH / 2;
+    // 레인 반전: 메인(lane 0)이 오른쪽, 분기가 왼쪽으로
+    return GUTTER_PAD + (layout.maxLane - lane) * LANE_WIDTH + LANE_WIDTH / 2;
   }
 
   function rowY(row: number) {
