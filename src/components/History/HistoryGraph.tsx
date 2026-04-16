@@ -3,7 +3,7 @@ import { computeGraphLayout, type GraphNode, type GraphLine } from "./graphLayou
 import type { HistoryItem } from "@/stores/historyStore";
 
 const ROW_HEIGHT = 48;
-const LANE_WIDTH = 16;
+const LANE_WIDTH = 24;
 const GUTTER_PAD = 12;
 const DOT_RADIUS = 5;
 
@@ -104,13 +104,14 @@ function GraphLineElement({
     );
   }
 
-  // 다른 레인: 꺾은선 (아래로 → 옆으로)
-  const midY = y2 - ROW_HEIGHT / 4;
+  // 다른 레인: 부모에서 바로 옆으로 나간 뒤 아래로 내려감
+  // (git graph 스타일: 분기점이 부모 행에서 시작)
+  const turnY = y1 + ROW_HEIGHT / 3;
   return (
     <path
-      d={`M${x1},${y1} L${x1},${midY} Q${x1},${y2} ${x2},${y2}`}
+      d={`M${x1},${y1} L${x1},${turnY} Q${x1},${turnY + 8} ${x2},${turnY + 8} L${x2},${y2}`}
       fill="none"
-      stroke="#6b7280"
+      stroke="#9ca3af"
       strokeWidth={2}
     />
   );
