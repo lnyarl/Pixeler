@@ -125,10 +125,10 @@ export class StabilityAdapter implements AIAdapter {
   }
 
   async regenerateWithFeedback(
-    options: FeedbackOptions & { originalPrompt?: string }
+    options: FeedbackOptions
   ): Promise<GeneratedImage[]> {
     const prompt = buildFeedbackPrompt(
-      options.originalPrompt ?? "",
+      options.originalPrompt,
       options.prompt,
       options.width,
       options.height,

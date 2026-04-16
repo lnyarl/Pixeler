@@ -75,7 +75,7 @@ describe("historyStore", () => {
     });
 
     const item = useHistoryStore.getState().items[0];
-    expect(item.id).toBeDefined();
+    expect(item.id).toMatch(/^[0-9a-f-]+$/);
     expect(item.timestamp).toBeGreaterThan(0);
   });
 });

@@ -116,9 +116,8 @@ export default function PixelCanvas({ onReady }: PixelCanvasProps) {
   // 외부에서 이미지 로드 (AI 생성 결과, 히스토리 복원 등)
   const loadImageData = useCallback(
     (data: ImageData) => {
-      if (imageDataRef.current) {
-        undoManagerRef.current.pushSnapshot(imageDataRef.current);
-      }
+      // AI 생성/히스토리 복원 시 undo 스택 클리어 (새 작업 시작)
+      undoManagerRef.current.clear();
       imageDataRef.current = new ImageData(
         new Uint8ClampedArray(data.data),
         data.width,

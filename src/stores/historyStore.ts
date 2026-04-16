@@ -20,8 +20,6 @@ export interface HistoryState {
   clear: () => void;
 }
 
-let nextId = 0;
-
 export const useHistoryStore = create<HistoryState>((set) => ({
   items: [],
 
@@ -29,7 +27,7 @@ export const useHistoryStore = create<HistoryState>((set) => ({
     set((state) => {
       const newItem: HistoryItem = {
         ...item,
-        id: `hist-${nextId++}`,
+        id: crypto.randomUUID(),
         timestamp: Date.now(),
       };
       const updated = [newItem, ...state.items];

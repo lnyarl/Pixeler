@@ -68,7 +68,7 @@ export default function FeedbackInput({
         width,
         height,
         viewType,
-      } as Parameters<typeof adapter.regenerateWithFeedback>[0]);
+      });
 
       if (results.length > 0) {
         const rawImageData = await base64ToImageData(results[0].base64);

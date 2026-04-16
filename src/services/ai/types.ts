@@ -31,7 +31,10 @@ export interface InpaintOptions {
 
 /** 피드백 기반 재생성 옵션 */
 export interface FeedbackOptions {
+  /** 피드백/수정 요청 텍스트 */
   prompt: string;
+  /** 원본 프롬프트 */
+  originalPrompt: string;
   /** 이전 이미지 (base64 PNG) */
   referenceImage: string;
   width: number;

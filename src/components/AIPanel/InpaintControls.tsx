@@ -5,6 +5,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { createAdapter } from "@/services/ai/adapterFactory";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import { base64ToImageData, imageDataToBase64 } from "@/utils/imageConvert";
+import { compositeWithMask } from "@/utils/compositeWithMask";
 import { getProviderCapabilities } from "@/components/Settings/ProviderSelector";
 
 interface InpaintControlsProps {
@@ -71,6 +72,7 @@ export default function InpaintControls({
       const adapter = createAdapter(selectedProvider, apiKey);
       if (!adapter.inpaint) {
         setError("현재 제공자는 inpainting을 지원하지 않습니다.");
+        setLoading(false);
         return;
       }
 
@@ -93,14 +95,17 @@ export default function InpaintControls({
         paletteSize,
       });
 
+      // 마스크 기반 합성: 마스킹 영역만 새 이미지, 나머지는 원본 유지
+      const composited = compositeWithMask(canvasData, processed, maskData);
+
       addHistoryItem({
         prompt: `[부분 수정] ${prompt}`,
         thumbnail: result.base64,
-        imageData: processed,
+        imageData: composited,
         type: "inpaint",
       });
 
-      onImageReady(processed);
+      onImageReady(composited);
       clearMask();
       setPrompt("");
     } catch (err) {
