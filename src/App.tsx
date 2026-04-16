@@ -8,6 +8,7 @@ import ToolSelector from "./components/Toolbar/ToolSelector";
 import ColorPicker from "./components/Toolbar/ColorPicker";
 import BrushSizeSelector from "./components/Toolbar/BrushSizeSelector";
 import ViewTypeSelector from "./components/Toolbar/ViewTypeSelector";
+import PaletteSizeSelector from "./components/Toolbar/PaletteSizeSelector";
 import PixelCanvas from "./components/Canvas/PixelCanvas";
 import type { PixelCanvasHandle } from "./components/Canvas/PixelCanvas";
 import ApiKeySettings from "./components/Settings/ApiKeySettings";
@@ -44,6 +45,7 @@ function App() {
           <hr className="border-gray-700" />
           <ResolutionSelector />
           <ViewTypeSelector />
+          <PaletteSizeSelector />
         </Sidebar>
         <MainArea>
           <PixelCanvas onReady={setCanvasHandle} />

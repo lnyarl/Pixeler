@@ -33,41 +33,55 @@ export class StabilityAdapter implements AIAdapter {
       options.viewType
     );
 
-    // Stability는 복수 출력을 지원하지 않으므로 반복 호출
+    // Stability는 복수 출력을 지원하지 않으므로 반복 호출.
+    // 부분 실패 시 성공 결과를 보존.
     const results: GeneratedImage[] = [];
+    const errors: string[] = [];
+
     for (let i = 0; i < options.count; i++) {
-      const formData = new FormData();
-      formData.append("prompt", prompt);
-      formData.append("output_format", "png");
+      try {
+        const formData = new FormData();
+        formData.append("prompt", prompt);
+        formData.append("output_format", "png");
 
-      const response = await fetchWithRetry(
-        `${API_BASE}/stable-image/generate/core`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-            Accept: "application/json",
+        const response = await fetchWithRetry(
+          `${API_BASE}/stable-image/generate/core`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              Accept: "application/json",
+            },
+            body: formData,
           },
-          body: formData,
-        },
-        { signal: options.signal }
-      );
+          { signal: options.signal }
+        );
 
-      if (!response.ok) {
-        const errorBody = await response.json().catch(() => ({}));
-        throwApiError(response.status, errorBody);
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => ({}));
+          throwApiError(response.status, errorBody);
+        }
+
+        const data = await response.json();
+        results.push({
+          base64: data.image,
+          metadata: {
+            provider: this.name,
+            model: "stable-image-core",
+            prompt: options.prompt,
+            timestamp: Date.now(),
+        },
+        });
+      } catch (err) {
+        // 취소는 즉시 전파
+        if (err instanceof Error && err.message.includes("취소")) throw err;
+        errors.push(err instanceof Error ? err.message : "알 수 없는 오류");
       }
+    }
 
-      const data = await response.json();
-      results.push({
-        base64: data.image,
-        metadata: {
-          provider: this.name,
-          model: "stable-image-core",
-          prompt: options.prompt,
-          timestamp: Date.now(),
-        },
-      });
+    // 전부 실패하면 에러
+    if (results.length === 0) {
+      throw new Error(errors[0] ?? "이미지 생성에 실패했습니다.");
     }
 
     return results;

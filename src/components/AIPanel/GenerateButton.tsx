@@ -33,6 +33,7 @@ export default function GenerateButton({
   const apiKeys = useSettingsStore((s) => s.apiKeys);
   const viewType = useSettingsStore((s) => s.viewType);
 
+  const paletteSize = useSettingsStore((s) => s.paletteSize);
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
@@ -67,7 +68,8 @@ export default function GenerateButton({
           const imageData = runPostProcess(rawImageData, {
             targetWidth: width,
             targetHeight: height,
-            modelType: "general",
+            providerType: selectedProvider,
+            paletteSize,
           });
           return { draft, imageData };
         })

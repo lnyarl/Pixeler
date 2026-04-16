@@ -10,10 +10,12 @@ export interface SettingsState {
   apiKeys: ApiKeys;
   selectedProvider: AIProviderType;
   viewType: ViewType;
+  paletteSize: number;
   setApiKey: (provider: AIProviderType, key: string) => void;
   removeApiKey: (provider: AIProviderType) => void;
   setSelectedProvider: (provider: AIProviderType) => void;
   setViewType: (viewType: ViewType) => void;
+  setPaletteSize: (size: number) => void;
 }
 
 const STORAGE_KEY = "pixeler_api_keys";
@@ -36,6 +38,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   apiKeys: loadApiKeys(),
   selectedProvider: "openai",
   viewType: "side",
+  paletteSize: 16,
 
   setApiKey: (provider, key) => {
     const updated = { ...get().apiKeys, [provider]: key };
@@ -51,4 +54,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   setSelectedProvider: (provider) => set({ selectedProvider: provider }),
   setViewType: (viewType) => set({ viewType }),
+  setPaletteSize: (size) => {
+    if (size >= 4 && size <= 64) set({ paletteSize: size });
+  },
 }));

@@ -3,13 +3,34 @@ const TIMEOUT_MS = 30_000;
 
 interface FetchWithRetryOptions {
   signal?: AbortSignal;
-  /** 재시도 대상 HTTP 상태코드 (기본: [429]) */
   retryStatuses?: number[];
+}
+
+/** abort-aware delay: signal이 abort되면 즉시 reject */
+function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error("요청이 취소되었습니다."));
+      return;
+    }
+
+    const timer = setTimeout(resolve, ms);
+
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(new Error("요청이 취소되었습니다."));
+      },
+      { once: true }
+    );
+  });
 }
 
 /**
  * fetch + AbortController 타임아웃 + exponential backoff 재시도.
  * 429 상태코드에 대해 자동 재시도 (최대 3회).
+ * 재시도 대기 중에도 외부 signal abort에 즉시 반응.
  */
 export async function fetchWithRetry(
   url: string,
@@ -19,16 +40,15 @@ export async function fetchWithRetry(
   const { signal, retryStatuses = [429] } = options;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    // 외부 signal 체크
+    if (signal?.aborted) throw new Error("요청이 취소되었습니다.");
+
     const controller = new AbortController();
-
-    // 외부 signal이 취소되면 내부 controller도 취소
-    if (signal) {
-      if (signal.aborted) throw new DOMException("Aborted", "AbortError");
-      signal.addEventListener("abort", () => controller.abort(), { once: true });
-    }
-
-    // 타임아웃
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    // 외부 signal → 내부 controller 연결 (cleanup 포함)
+    const onAbort = () => controller.abort();
+    signal?.addEventListener("abort", onAbort, { once: true });
 
     try {
       const response = await fetch(url, {
@@ -37,16 +57,18 @@ export async function fetchWithRetry(
       });
 
       clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", onAbort);
 
       if (retryStatuses.includes(response.status) && attempt < MAX_RETRIES) {
-        const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
-        await new Promise((r) => setTimeout(r, delay));
+        const delay = Math.pow(2, attempt) * 1000;
+        await abortableDelay(delay, signal);
         continue;
       }
 
       return response;
     } catch (err) {
       clearTimeout(timeoutId);
+      signal?.removeEventListener("abort", onAbort);
 
       if (err instanceof DOMException && err.name === "AbortError") {
         if (signal?.aborted) {
@@ -55,7 +77,6 @@ export async function fetchWithRetry(
         throw new Error("응답 시간이 초과되었습니다. (30초)");
       }
 
-      // 네트워크 에러에 대해서는 재시도하지 않음
       throw err;
     }
   }

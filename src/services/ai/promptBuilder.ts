@@ -15,8 +15,7 @@ export function buildGeneratePrompt(
   height: number,
   viewType: ViewType
 ): string {
-  const sizeStr =
-    width === height ? `${width}x${height}` : `${width}x${height}`;
+  const sizeStr = `${width}x${height}`;
   const viewStr = VIEW_TYPE_LABELS[viewType];
 
   return [
