@@ -124,6 +124,9 @@ export default function PromptPanel({
       if (processed.length === 1) {
         onImageReady(processed[0].imageData);
       }
+
+      // 성공 후 프롬프트 초기화
+      setPrompt("");
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
