@@ -121,31 +121,39 @@ export default function PromptPanel({
       const parentId = hasCanvasContent ? currentActiveId : null;
       const historyType = hasCanvasContent ? "feedback" : "generate";
 
-      const processed: ProcessedDraft[] = [];
-      for (const result of results) {
-        const rawImageData = await base64ToImageData(result.base64);
-        const imageData = runPostProcess(rawImageData, {
-          targetWidth: width,
-          targetHeight: height,
-          providerType: selectedProvider,
-          paletteSize,
-        });
+      // 후처리
+      const processedImages = await Promise.all(
+        results.map(async (result) => {
+          const rawImageData = await base64ToImageData(result.base64);
+          const imageData = runPostProcess(rawImageData, {
+            targetWidth: width,
+            targetHeight: height,
+            providerType: selectedProvider,
+            paletteSize,
+          });
+          return { draft: result, imageData };
+        })
+      );
+
+      // 1장이면 먼저 캔버스에 로드 (undo 스택에 이전 activeItemId 저장)
+      if (processedImages.length === 1) {
+        onImageReady(processedImages[0].imageData);
+      }
+
+      // 히스토리에 저장 (activeItemId가 이미 갱신된 후)
+      const processed: ProcessedDraft[] = processedImages.map((item) => {
         const historyId = addHistoryItem({
           prompt,
-          thumbnail: result.base64,
-          imageData,
+          thumbnail: item.draft.base64,
+          imageData: item.imageData,
           type: historyType,
           parentId,
         });
-        processed.push({ draft: result, imageData, historyId });
-      }
+        return { ...item, historyId };
+      });
 
       setDrafts(results);
       onDraftsReady?.(processed);
-
-      if (processed.length === 1) {
-        onImageReady(processed[0].imageData);
-      }
 
       // 성공 후 프롬프트 초기화
       setPrompt("");
@@ -188,7 +196,10 @@ export default function PromptPanel({
       activeItemId: currentActiveId,
       parentId,
     });
-    const historyType = hasCanvasContent ? "feedback" : "generate";
+    // onImageReady를 먼저 호출 → loadImageData에서 이전 activeItemId를 undo 스택에 저장
+    onImageReady(imgData);
+
+    const historyType = hasContent ? "feedback" : "generate";
     const historyId = addHistoryItem({
       prompt: prompt || "[DEV] 더미 이미지",
       thumbnail: "",
@@ -198,7 +209,6 @@ export default function PromptPanel({
     });
 
     onDraftsReady?.([{ draft: { base64: "", metadata: { provider: "dev", model: "mock", prompt: prompt || "dev", timestamp: Date.now() } }, imageData: imgData, historyId }]);
-    onImageReady(imgData);
     setPrompt("");
   }
 

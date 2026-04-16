@@ -121,6 +121,7 @@ export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
       // 현재 상태를 undo 스택에 저장 (히스토리 이동도 undo 가능)
       if (imageDataRef.current) {
         const currentActiveId = useHistoryStore.getState().activeItemId;
+        console.log("[Pixeler] loadImageData push:", { currentActiveId, undoCount: undoManagerRef.current.undoCount });
         undoManagerRef.current.pushSnapshot(imageDataRef.current, currentActiveId);
       }
       imageDataRef.current = new ImageData(
@@ -157,6 +158,7 @@ export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
     const currentActiveId = useHistoryStore.getState().activeItemId;
     const prev = undoManagerRef.current.undo(imgData, currentActiveId);
     if (prev) {
+      console.log("[Pixeler] undo:", { from: currentActiveId, to: prev.activeItemId, undoCount: undoManagerRef.current.undoCount });
       imageDataRef.current = prev.imageData;
       useHistoryStore.getState().setActiveItemId(prev.activeItemId);
       renderCanvas();
