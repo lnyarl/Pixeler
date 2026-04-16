@@ -84,10 +84,11 @@ export default function PromptPanel({
           .map((h) => h.prompt)
           .join(" → ");
 
+        const { buildFeedbackPrompt } = await import("@/services/ai/promptBuilder");
         console.log("[Pixeler] 수정 생성 요청:", {
           userPrompt: prompt,
           originalPrompt: recentHistory,
-          finalPrompt: `Original: ${recentHistory}\nChange: ${prompt}\nStyle: ${width}x${height} pixel art, ${viewType}...`,
+          finalPrompt: buildFeedbackPrompt(recentHistory, prompt, width, height, viewType),
           provider: selectedProvider,
           hasReferenceImage: true,
         });
@@ -103,9 +104,10 @@ export default function PromptPanel({
           signal: controller.signal,
         });
       } else {
+        const { buildGeneratePrompt } = await import("@/services/ai/promptBuilder");
         console.log("[Pixeler] 새 생성 요청:", {
           userPrompt: prompt,
-          finalPrompt: `${prompt}\nStyle: ${width}x${height} pixel art, ${viewType}...`,
+          finalPrompt: buildGeneratePrompt(prompt, width, height, viewType),
           provider: selectedProvider,
           count,
         });
