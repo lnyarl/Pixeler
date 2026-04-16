@@ -19,6 +19,7 @@ import DraftGrid from "./components/AIPanel/DraftGrid";
 import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
 import InpaintControls from "./components/AIPanel/InpaintControls";
 import HistoryPanel from "./components/History/HistoryPanel";
+import ExportButton from "./components/Export/ExportButton";
 import { useGenerationStore } from "./stores/generationStore";
 
 function App() {
@@ -71,6 +72,7 @@ function App() {
             getCanvasImageData={getCanvasImageData}
             onImageReady={handleImageReady}
           />
+          <ExportButton getCanvasImageData={getCanvasImageData} />
           <hr className="border-gray-700" />
           <HistoryPanel onRestore={handleImageReady} />
         </AIPanel>
