@@ -8,8 +8,11 @@ import type {
 } from "../types";
 import { fetchWithRetry } from "../fetchWithRetry";
 import { buildGeneratePrompt, buildFeedbackPrompt } from "../promptBuilder";
+import { base64ToBlob } from "@/utils/imageConvert";
 
-const API_BASE = "https://api.stability.ai/v2beta";
+const API_BASE = import.meta.env.DEV
+  ? "/api/stability/v2beta"
+  : "https://api.stability.ai/v2beta";
 
 export class StabilityAdapter implements AIAdapter {
   readonly name = "Stability AI";
@@ -108,10 +111,10 @@ export class StabilityAdapter implements AIAdapter {
   }
 
   async regenerateWithFeedback(
-    options: FeedbackOptions
+    options: FeedbackOptions & { originalPrompt?: string }
   ): Promise<GeneratedImage[]> {
     const prompt = buildFeedbackPrompt(
-      options.prompt,
+      options.originalPrompt ?? "",
       options.prompt,
       options.width,
       options.height,
@@ -159,15 +162,6 @@ export class StabilityAdapter implements AIAdapter {
       },
     ];
   }
-}
-
-function base64ToBlob(base64: string): Blob {
-  const byteString = atob(base64);
-  const bytes = new Uint8Array(byteString.length);
-  for (let i = 0; i < byteString.length; i++) {
-    bytes[i] = byteString.charCodeAt(i);
-  }
-  return new Blob([bytes], { type: "image/png" });
 }
 
 function throwApiError(status: number, body: Record<string, unknown>): never {

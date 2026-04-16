@@ -10,4 +10,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/api/openai": {
+        target: "https://api.openai.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/openai/, ""),
+      },
+      "/api/stability": {
+        target: "https://api.stability.ai",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/stability/, ""),
+      },
+    },
+  },
 });

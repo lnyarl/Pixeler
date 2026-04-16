@@ -3,12 +3,24 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { createAdapter } from "@/services/ai/adapterFactory";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
+import { base64ToImageData } from "@/utils/imageConvert";
+import type { GeneratedImage } from "@/services/ai/types";
+
+/** 후처리된 ImageData를 draft와 함께 보관 */
+export interface ProcessedDraft {
+  draft: GeneratedImage;
+  imageData: ImageData;
+}
 
 interface GenerateButtonProps {
   onImageReady: (imageData: ImageData) => void;
+  onDraftsReady?: (drafts: ProcessedDraft[]) => void;
 }
 
-export default function GenerateButton({ onImageReady }: GenerateButtonProps) {
+export default function GenerateButton({
+  onImageReady,
+  onDraftsReady,
+}: GenerateButtonProps) {
   const status = useGenerationStore((s) => s.status);
   const prompt = useGenerationStore((s) => s.prompt);
   const count = useGenerationStore((s) => s.count);
@@ -48,22 +60,25 @@ export default function GenerateButton({ onImageReady }: GenerateButtonProps) {
         signal: controller.signal,
       });
 
-      // 후처리
-      const processed = results.map((result) => {
-        const imgData = base64ToImageData(result.base64);
-        const postProcessed = runPostProcess(imgData, {
-          targetWidth: width,
-          targetHeight: height,
-          modelType: "general",
-        });
-        return { ...result, _processedImageData: postProcessed };
-      });
+      // 비동기 후처리
+      const processed: ProcessedDraft[] = await Promise.all(
+        results.map(async (draft) => {
+          const rawImageData = await base64ToImageData(draft.base64);
+          const imageData = runPostProcess(rawImageData, {
+            targetWidth: width,
+            targetHeight: height,
+            modelType: "general",
+          });
+          return { draft, imageData };
+        })
+      );
 
-      setDrafts(processed);
+      setDrafts(results);
+      onDraftsReady?.(processed);
 
       // 1장이면 바로 캔버스에 로드
-      if (processed.length === 1 && processed[0]._processedImageData) {
-        onImageReady(processed[0]._processedImageData);
+      if (processed.length === 1) {
+        onImageReady(processed[0].imageData);
       }
     } catch (err) {
       if (err instanceof Error) {
@@ -93,29 +108,4 @@ export default function GenerateButton({ onImageReady }: GenerateButtonProps) {
       생성
     </button>
   );
-}
-
-/** base64 PNG → ImageData 변환 (Canvas API 사용) */
-function base64ToImageData(base64: string): ImageData {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d")!;
-  const img = new Image();
-
-  // 동기적 처리를 위해 dataURL 사용
-  img.src = `data:image/png;base64,${base64}`;
-
-  // 이 시점에서 img가 아직 로드되지 않았을 수 있음
-  // 실제로는 비동기 처리가 필요하지만, 간단하게 처리
-  canvas.width = img.naturalWidth || 1024;
-  canvas.height = img.naturalHeight || 1024;
-  ctx.drawImage(img, 0, 0);
-
-  return ctx.getImageData(0, 0, canvas.width, canvas.height);
-}
-
-// 후처리된 ImageData를 GeneratedImage에 임시 첨부하기 위한 타입 확장
-declare module "@/services/ai/types" {
-  interface GeneratedImage {
-    _processedImageData?: ImageData;
-  }
 }

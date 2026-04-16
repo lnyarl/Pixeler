@@ -14,6 +14,7 @@ import ApiKeySettings from "./components/Settings/ApiKeySettings";
 import ProviderSelector from "./components/Settings/ProviderSelector";
 import PromptInput from "./components/AIPanel/PromptInput";
 import GenerateButton from "./components/AIPanel/GenerateButton";
+import type { ProcessedDraft } from "./components/AIPanel/GenerateButton";
 import DraftGrid from "./components/AIPanel/DraftGrid";
 import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
 import LoadingIndicator from "./components/AIPanel/LoadingIndicator";
@@ -23,6 +24,7 @@ function App() {
   const [canvasHandle, setCanvasHandle] = useState<PixelCanvasHandle | null>(
     null
   );
+  const [processedDrafts, setProcessedDrafts] = useState<ProcessedDraft[]>([]);
 
   const handleImageReady = useCallback(
     (imageData: ImageData) => {
@@ -50,10 +52,13 @@ function App() {
           <ProviderSelector />
           <hr className="border-gray-700" />
           <PromptInput />
-          <GenerateButton onImageReady={handleImageReady} />
+          <GenerateButton
+            onImageReady={handleImageReady}
+            onDraftsReady={setProcessedDrafts}
+          />
           <LoadingIndicator />
           <ErrorDisplay />
-          <DraftGrid onSelect={handleImageReady} />
+          <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
         </AIPanel>
       </div>
       {settingsOpen && (

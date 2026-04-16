@@ -8,8 +8,12 @@ import type {
 } from "../types";
 import { fetchWithRetry } from "../fetchWithRetry";
 import { buildGeneratePrompt, buildFeedbackPrompt } from "../promptBuilder";
+import { base64ToBlob } from "@/utils/imageConvert";
 
-const API_BASE = "https://api.openai.com/v1";
+// 개발: Vite proxy, 프로덕션: 직접 호출 또는 별도 프록시
+const API_BASE = import.meta.env.DEV
+  ? "/api/openai/v1"
+  : "https://api.openai.com/v1";
 
 export class OpenAIAdapter implements AIAdapter {
   readonly name = "OpenAI GPT Image";
@@ -109,11 +113,11 @@ export class OpenAIAdapter implements AIAdapter {
   }
 
   async regenerateWithFeedback(
-    options: FeedbackOptions
+    options: FeedbackOptions & { originalPrompt?: string }
   ): Promise<GeneratedImage[]> {
     const prompt = buildFeedbackPrompt(
+      options.originalPrompt ?? "",
       options.prompt,
-      options.prompt, // 피드백은 prompt에 포함
       options.width,
       options.height,
       options.viewType
@@ -160,15 +164,6 @@ export class OpenAIAdapter implements AIAdapter {
       },
     }));
   }
-}
-
-function base64ToBlob(base64: string): Blob {
-  const byteString = atob(base64);
-  const bytes = new Uint8Array(byteString.length);
-  for (let i = 0; i < byteString.length; i++) {
-    bytes[i] = byteString.charCodeAt(i);
-  }
-  return new Blob([bytes], { type: "image/png" });
 }
 
 function throwApiError(status: number, body: Record<string, unknown>): never {
