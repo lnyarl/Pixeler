@@ -19,6 +19,7 @@ import DraftGrid from "./components/AIPanel/DraftGrid";
 import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
 import InpaintControls from "./components/AIPanel/InpaintControls";
 import HistoryPanel from "./components/History/HistoryPanel";
+import { useGenerationStore } from "./stores/generationStore";
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -26,6 +27,7 @@ function App() {
     null
   );
   const [processedDrafts, setProcessedDrafts] = useState<ProcessedDraft[]>([]);
+  const isGenerating = useGenerationStore((s) => s.status === "loading");
 
   const handleImageReady = useCallback(
     (imageData: ImageData) => {
@@ -43,7 +45,7 @@ function App() {
     <div className="h-screen flex flex-col bg-gray-900 text-white">
       <Header onSettingsClick={() => setSettingsOpen(true)} />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar>
+        <Sidebar disabled={isGenerating}>
           <ToolSelector />
           <ColorPicker />
           <BrushSizeSelector />
@@ -53,7 +55,7 @@ function App() {
           <PaletteSizeSelector />
         </Sidebar>
         <MainArea>
-          <PixelCanvas onReady={setCanvasHandle} />
+          <PixelCanvas onReady={setCanvasHandle} disabled={isGenerating} />
         </MainArea>
         <AIPanel>
           <ProviderSelector />

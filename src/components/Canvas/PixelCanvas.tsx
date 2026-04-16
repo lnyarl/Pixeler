@@ -18,9 +18,10 @@ export interface PixelCanvasHandle {
 
 interface PixelCanvasProps {
   onReady?: (handle: PixelCanvasHandle) => void;
+  disabled?: boolean;
 }
 
-export default function PixelCanvas({ onReady }: PixelCanvasProps) {
+export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
@@ -204,7 +205,11 @@ export default function PixelCanvas({ onReady }: PixelCanvasProps) {
   const um = undoManagerRef.current;
   const scaledW = width * scale;
   const scaledH = height * scale;
-  const cursorClass = currentTool === "move" ? "cursor-grab active:cursor-grabbing" : "cursor-crosshair";
+  const cursorClass = disabled
+    ? "cursor-not-allowed"
+    : currentTool === "move"
+      ? "cursor-grab active:cursor-grabbing"
+      : "cursor-crosshair";
 
   return (
     <div
@@ -216,8 +221,8 @@ export default function PixelCanvas({ onReady }: PixelCanvasProps) {
       <div
         className={`relative ${cursorClass}`}
         style={{ width: scaledW, height: scaledH }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
+        onMouseDown={disabled ? undefined : handleMouseDown}
+        onMouseMove={disabled ? undefined : handleMouseMove}
       >
         <canvas
           ref={canvasRef}
