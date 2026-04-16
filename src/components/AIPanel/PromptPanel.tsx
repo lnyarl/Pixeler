@@ -1,3 +1,4 @@
+import { useState as useLocalState, useEffect, useRef } from "react";
 import { useGenerationStore } from "@/stores/generationStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useCanvasStore } from "@/stores/canvasStore";
@@ -215,11 +216,27 @@ export default function PromptPanel({
       {status === "loading" && (
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <span>생성 중...</span>
+          <ElapsedTime />
         </div>
       )}
     </div>
   );
+}
+
+/** 경과 시간 표시 */
+function ElapsedTime() {
+  const [seconds, setSeconds] = useLocalState(0);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    startRef.current = Date.now();
+    const interval = setInterval(() => {
+      setSeconds(Math.floor((Date.now() - startRef.current) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return <span>생성 중... {seconds}초</span>;
 }
 
 /** ImageData에 불투명 픽셀이 하나라도 있는지 확인 */
