@@ -40,8 +40,10 @@ export function runPostProcess(
   // 투명 배경을 팔레트 매핑 전에 적용 (원본 색 기반 배경 감지)
   result = makeTransparentBackground(result);
 
-  // 팔레트 매핑 (안티앨리어싱 제거 포함)
-  result = paletteMap(result, paletteSize);
+  // 팔레트 매핑 (안티앨리어싱 제거 포함). 0이면 제한 없음(스킵).
+  if (paletteSize > 0) {
+    result = paletteMap(result, paletteSize);
+  }
 
   return result;
 }

@@ -55,6 +55,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setSelectedProvider: (provider) => set({ selectedProvider: provider }),
   setViewType: (viewType) => set({ viewType }),
   setPaletteSize: (size) => {
-    if (size >= 4 && size <= 64) set({ paletteSize: size });
+    if (size === 0 || (size >= 4 && size <= 64)) set({ paletteSize: size });
   },
 }));
