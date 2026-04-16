@@ -1,0 +1,191 @@
+import type {
+  AIAdapter,
+  GenerateOptions,
+  GeneratedImage,
+  InpaintOptions,
+  FeedbackOptions,
+  ProviderCapabilities,
+} from "../types";
+import { fetchWithRetry } from "../fetchWithRetry";
+import { buildGeneratePrompt, buildFeedbackPrompt } from "../promptBuilder";
+
+const API_BASE = "https://api.openai.com/v1";
+
+export class OpenAIAdapter implements AIAdapter {
+  readonly name = "OpenAI GPT Image";
+  readonly providerType = "openai" as const;
+  readonly capabilities: ProviderCapabilities = {
+    supportsInpainting: true,
+    supportsMultipleOutputs: true,
+    supportsImageReference: true,
+  };
+
+  constructor(private apiKey: string) {}
+
+  async generate(options: GenerateOptions): Promise<GeneratedImage[]> {
+    const prompt = buildGeneratePrompt(
+      options.prompt,
+      options.width,
+      options.height,
+      options.viewType
+    );
+
+    const response = await fetchWithRetry(
+      `${API_BASE}/images/generations`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-image-1",
+          prompt,
+          n: options.count,
+          size: "1024x1024",
+          response_format: "b64_json",
+        }),
+      },
+      { signal: options.signal }
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      throwApiError(response.status, errorBody);
+    }
+
+    const data = await response.json();
+    const timestamp = Date.now();
+
+    return data.data.map((item: { b64_json: string }) => ({
+      base64: item.b64_json,
+      metadata: {
+        provider: this.name,
+        model: "gpt-image-1",
+        prompt: options.prompt,
+        timestamp,
+      },
+    }));
+  }
+
+  async inpaint(options: InpaintOptions): Promise<GeneratedImage> {
+    // OpenAI edit API는 FormData로 전달
+    const formData = new FormData();
+    formData.append("model", "gpt-image-1");
+    formData.append("prompt", options.prompt);
+    formData.append("image", base64ToBlob(options.image), "image.png");
+    formData.append("mask", base64ToBlob(options.mask), "mask.png");
+    formData.append("size", "1024x1024");
+    formData.append("response_format", "b64_json");
+
+    const response = await fetchWithRetry(
+      `${API_BASE}/images/edits`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: formData,
+      },
+      { signal: options.signal }
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      throwApiError(response.status, errorBody);
+    }
+
+    const data = await response.json();
+
+    return {
+      base64: data.data[0].b64_json,
+      metadata: {
+        provider: this.name,
+        model: "gpt-image-1",
+        prompt: options.prompt,
+        timestamp: Date.now(),
+      },
+    };
+  }
+
+  async regenerateWithFeedback(
+    options: FeedbackOptions
+  ): Promise<GeneratedImage[]> {
+    const prompt = buildFeedbackPrompt(
+      options.prompt,
+      options.prompt, // 피드백은 prompt에 포함
+      options.width,
+      options.height,
+      options.viewType
+    );
+
+    // 참조 이미지와 함께 edit API 사용
+    const formData = new FormData();
+    formData.append("model", "gpt-image-1");
+    formData.append("prompt", prompt);
+    formData.append(
+      "image",
+      base64ToBlob(options.referenceImage),
+      "reference.png"
+    );
+    formData.append("size", "1024x1024");
+    formData.append("response_format", "b64_json");
+
+    const response = await fetchWithRetry(
+      `${API_BASE}/images/edits`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: formData,
+      },
+      { signal: options.signal }
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      throwApiError(response.status, errorBody);
+    }
+
+    const data = await response.json();
+
+    return data.data.map((item: { b64_json: string }) => ({
+      base64: item.b64_json,
+      metadata: {
+        provider: this.name,
+        model: "gpt-image-1",
+        prompt: options.prompt,
+        timestamp: Date.now(),
+      },
+    }));
+  }
+}
+
+function base64ToBlob(base64: string): Blob {
+  const byteString = atob(base64);
+  const bytes = new Uint8Array(byteString.length);
+  for (let i = 0; i < byteString.length; i++) {
+    bytes[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: "image/png" });
+}
+
+function throwApiError(status: number, body: Record<string, unknown>): never {
+  const message =
+    (body?.error as Record<string, unknown>)?.message ?? "알 수 없는 오류";
+
+  switch (status) {
+    case 401:
+      throw new Error("API 키가 올바르지 않습니다.");
+    case 429:
+      throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+    case 400:
+      if (String(message).includes("safety") || String(message).includes("policy")) {
+        throw new Error("요청이 AI 정책에 의해 거부되었습니다. 프롬프트를 수정해주세요.");
+      }
+      throw new Error(`잘못된 요청: ${message}`);
+    default:
+      throw new Error(`API 오류 (${status}): ${message}`);
+  }
+}
