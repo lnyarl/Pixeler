@@ -47,7 +47,7 @@ export class OpenAIAdapter implements AIAdapter {
           prompt,
           n: options.count,
           size: "1024x1024",
-          response_format: "b64_json",
+          output_format: "png",
         }),
       },
       { signal: options.signal }
@@ -61,8 +61,8 @@ export class OpenAIAdapter implements AIAdapter {
     const data = await response.json();
     const timestamp = Date.now();
 
-    return data.data.map((item: { b64_json: string }) => ({
-      base64: item.b64_json,
+    return data.data.map((item: { b64_json?: string; b64?: string }) => ({
+      base64: item.b64_json ?? item.b64 ?? "",
       metadata: {
         provider: this.name,
         model: "gpt-image-1",
@@ -80,7 +80,7 @@ export class OpenAIAdapter implements AIAdapter {
     formData.append("image", base64ToBlob(options.image), "image.png");
     formData.append("mask", base64ToBlob(options.mask), "mask.png");
     formData.append("size", "1024x1024");
-    formData.append("response_format", "b64_json");
+    formData.append("output_format", "png");
 
     const response = await fetchWithRetry(
       `${API_BASE}/images/edits`,
@@ -101,8 +101,9 @@ export class OpenAIAdapter implements AIAdapter {
 
     const data = await response.json();
 
+    const item = data.data[0];
     return {
-      base64: data.data[0].b64_json,
+      base64: item.b64_json ?? item.b64 ?? "",
       metadata: {
         provider: this.name,
         model: "gpt-image-1",
@@ -133,7 +134,7 @@ export class OpenAIAdapter implements AIAdapter {
       "reference.png"
     );
     formData.append("size", "1024x1024");
-    formData.append("response_format", "b64_json");
+    formData.append("output_format", "png");
 
     const response = await fetchWithRetry(
       `${API_BASE}/images/edits`,
@@ -154,8 +155,8 @@ export class OpenAIAdapter implements AIAdapter {
 
     const data = await response.json();
 
-    return data.data.map((item: { b64_json: string }) => ({
-      base64: item.b64_json,
+    return data.data.map((item: { b64_json?: string; b64?: string }) => ({
+      base64: item.b64_json ?? item.b64 ?? "",
       metadata: {
         provider: this.name,
         model: "gpt-image-1",

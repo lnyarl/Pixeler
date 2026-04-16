@@ -6,7 +6,7 @@ interface DraftGridProps {
 }
 
 export default function DraftGrid({ drafts, onSelect }: DraftGridProps) {
-  if (drafts.length <= 1) return null;
+  if (!drafts || drafts.length <= 1) return null;
 
   return (
     <div className="flex flex-col gap-2">
