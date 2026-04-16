@@ -15,6 +15,7 @@ export default function HistoryPanel({ onRestore }: HistoryPanelProps) {
   const dirty = useCanvasStore((s) => s.dirty);
 
   function handleSelect(item: HistoryItem) {
+    if (item.id === activeItemId) return;
     if (dirty) {
       if (!window.confirm("현재 편집 내용을 버리고 이 버전을 로드하시겠습니까?")) {
         return;
