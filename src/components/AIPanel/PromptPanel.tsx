@@ -137,6 +137,34 @@ export default function PromptPanel({
     }
   }
 
+  /** DEV: AI 호출 없이 랜덤 더미 이미지 생성 */
+  function handleSkip() {
+    const imgData = new ImageData(width, height);
+    // 랜덤 픽셀아트 생성
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      if (Math.random() > 0.7) {
+        imgData.data[i] = Math.floor(Math.random() * 256);
+        imgData.data[i + 1] = Math.floor(Math.random() * 256);
+        imgData.data[i + 2] = Math.floor(Math.random() * 256);
+        imgData.data[i + 3] = 255;
+      }
+    }
+
+    const parentId = hasCanvasContent ? activeItemId : null;
+    const historyType = hasCanvasContent ? "feedback" : "generate";
+    const historyId = addHistoryItem({
+      prompt: prompt || "[DEV] 더미 이미지",
+      thumbnail: "",
+      imageData: imgData,
+      type: historyType,
+      parentId,
+    });
+
+    onDraftsReady?.([{ draft: { base64: "", metadata: { provider: "dev", model: "mock", prompt: prompt || "dev", timestamp: Date.now() } }, imageData: imgData, historyId }]);
+    onImageReady(imgData);
+    setPrompt("");
+  }
+
   const buttonLabel = hasCanvasContent ? "수정 생성" : "생성";
   const currentApiKey = apiKeys[selectedProvider];
 
@@ -201,16 +229,27 @@ export default function PromptPanel({
           취소
         </button>
       ) : (
-        <button
-          onClick={handleGenerate}
-          className={`w-full px-3 py-2 text-sm rounded transition-colors ${
-            hasCanvasContent
-              ? "bg-green-700 text-white hover:bg-green-600"
-              : "bg-blue-600 text-white hover:bg-blue-500"
-          }`}
-        >
-          {buttonLabel}
-        </button>
+        <div className="flex gap-1">
+          <button
+            onClick={handleGenerate}
+            className={`flex-1 px-3 py-2 text-sm rounded transition-colors ${
+              hasCanvasContent
+                ? "bg-green-700 text-white hover:bg-green-600"
+                : "bg-blue-600 text-white hover:bg-blue-500"
+            }`}
+          >
+            {buttonLabel}
+          </button>
+          {import.meta.env.DEV && (
+            <button
+              onClick={handleSkip}
+              className="px-3 py-2 text-sm bg-yellow-800 text-yellow-200 rounded hover:bg-yellow-700 transition-colors"
+              title="AI 호출 없이 더미 이미지로 테스트"
+            >
+              DEV
+            </button>
+          )}
+        </div>
       )}
 
       {status === "loading" && (
