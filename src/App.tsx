@@ -1,7 +1,20 @@
+import { useState } from "react";
+import Header from "./components/Layout/Header";
+import Sidebar from "./components/Layout/Sidebar";
+import MainArea from "./components/Layout/MainArea";
+import AIPanel from "./components/Layout/AIPanel";
+
 function App() {
+  const [_settingsOpen, setSettingsOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-      <h1 className="text-3xl font-bold">Pixeler</h1>
+    <div className="h-screen flex flex-col bg-gray-900 text-white">
+      <Header onSettingsClick={() => setSettingsOpen(true)} />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <MainArea />
+        <AIPanel />
+      </div>
     </div>
   );
 }
