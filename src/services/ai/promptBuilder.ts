@@ -7,7 +7,8 @@ const VIEW_TYPE_LABELS: Record<ViewType, string> = {
 };
 
 /**
- * 사용자 프롬프트에 시스템 컨텍스트를 자동 삽입하여 AI에 전달할 최종 프롬프트를 구성.
+ * 사용자 프롬프트에 스타일 힌트만 삽입. 내용은 사용자 프롬프트에 맡김.
+ * "sprite"를 넣으면 AI가 캐릭터로 해석하므로 의도적으로 제외.
  */
 export function buildGeneratePrompt(
   userPrompt: string,
@@ -19,15 +20,13 @@ export function buildGeneratePrompt(
   const viewStr = VIEW_TYPE_LABELS[viewType];
 
   return [
-    `${sizeStr} pixel art sprite, ${viewStr}.`,
-    `Clean pixel art style, limited color palette, no anti-aliasing, transparent background.`,
     userPrompt,
+    `Style: ${sizeStr} pixel art, ${viewStr}, clean pixel art style, limited color palette, no anti-aliasing, transparent background.`,
   ].join("\n");
 }
 
 /**
  * 피드백 기반 재생성 프롬프트.
- * 이전 프롬프트 + 피드백 텍스트를 결합.
  */
 export function buildFeedbackPrompt(
   originalPrompt: string,
@@ -40,9 +39,8 @@ export function buildFeedbackPrompt(
   const viewStr = VIEW_TYPE_LABELS[viewType];
 
   return [
-    `${sizeStr} pixel art sprite, ${viewStr}.`,
-    `Clean pixel art style, limited color palette, no anti-aliasing, transparent background.`,
-    `Original request: ${originalPrompt}`,
-    `Modification request: ${feedback}`,
+    `Original: ${originalPrompt}`,
+    `Change: ${feedback}`,
+    `Style: ${sizeStr} pixel art, ${viewStr}, clean pixel art style, limited color palette, no anti-aliasing, transparent background.`,
   ].join("\n");
 }

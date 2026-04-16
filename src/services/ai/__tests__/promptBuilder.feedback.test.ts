@@ -11,14 +11,14 @@ describe("buildFeedbackPrompt", () => {
       "side"
     );
 
-    expect(result).toContain("Original request: 파란 기사");
-    expect(result).toContain("Modification request: 검을 더 크게");
+    expect(result).toContain("Original: 파란 기사");
+    expect(result).toContain("Change: 검을 더 크게");
   });
 
   it("원본이 빈 문자열이어도 동작", () => {
     const result = buildFeedbackPrompt("", "더 밝게", 16, 16, "top-down");
-    expect(result).toContain("Original request: ");
-    expect(result).toContain("Modification request: 더 밝게");
+    expect(result).toContain("Original: ");
+    expect(result).toContain("Change: 더 밝게");
   });
 
   it("해상도와 뷰타입이 포함된다", () => {

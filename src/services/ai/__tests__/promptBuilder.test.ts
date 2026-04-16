@@ -35,8 +35,8 @@ describe("buildFeedbackPrompt", () => {
       32,
       "side"
     );
-    expect(result).toContain("Original request: 기사 캐릭터");
-    expect(result).toContain("Modification request: 검을 더 크게");
+    expect(result).toContain("Original: 기사 캐릭터");
+    expect(result).toContain("Change: 검을 더 크게");
     expect(result).toContain("pixel art");
   });
 });
