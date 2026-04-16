@@ -6,6 +6,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { createAdapter } from "@/services/ai/adapterFactory";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import { base64ToImageData, imageDataToBase64 } from "@/utils/imageConvert";
+import { compositeWithMask } from "@/utils/compositeWithMask";
 import type { GeneratedImage } from "@/services/ai/types";
 
 let devCounter = 0;
@@ -56,8 +57,11 @@ export default function PromptPanel({
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
+  const maskData = useCanvasStore((s) => s.maskData);
+  const clearMask = useCanvasStore((s) => s.clearMask);
   const canvasData = getCanvasImageData();
   const hasCanvasContent = canvasData !== null && hasVisiblePixels(canvasData);
+  const hasMask = maskData !== null;
 
   async function handleGenerate() {
     if (!prompt.trim()) {
@@ -77,7 +81,56 @@ export default function PromptPanel({
       const adapter = createAdapter(selectedProvider, apiKey);
       let results: GeneratedImage[];
 
-      if (hasCanvasContent && adapter.regenerateWithFeedback) {
+      if (hasMask && hasCanvasContent && adapter.inpaint) {
+        // 마스크 있음 → inpainting
+        const { buildGeneratePrompt } = await import("@/services/ai/promptBuilder");
+        const inpaintPrompt = buildGeneratePrompt(prompt, width, height, viewType);
+
+        console.log("[Pixeler] 부분 수정 요청:", {
+          userPrompt: prompt,
+          finalPrompt: inpaintPrompt,
+          provider: selectedProvider,
+          hasMask: true,
+        });
+
+        const imageBase64 = imageDataToBase64(canvasData!);
+        const maskBase64 = imageDataToBase64(maskData!);
+
+        const result = await adapter.inpaint({
+          prompt: inpaintPrompt,
+          image: imageBase64,
+          mask: maskBase64,
+          width,
+          height,
+          signal: controller.signal,
+        });
+
+        const rawImageData = await base64ToImageData(result.base64);
+        const processed = runPostProcess(rawImageData, {
+          targetWidth: width,
+          targetHeight: height,
+          providerType: selectedProvider,
+          paletteSize,
+        });
+        const composited = compositeWithMask(canvasData!, processed, maskData!);
+
+        onImageReady(composited);
+
+        const thumbnail = imageDataToBase64(composited);
+        const currentActiveId = useHistoryStore.getState().activeItemId;
+        addHistoryItem({
+          prompt: `[부분 수정] ${prompt}`,
+          thumbnail,
+          imageData: composited,
+          type: "inpaint",
+          parentId: currentActiveId,
+        });
+
+        clearMask();
+        setPrompt("");
+        setDrafts([]);
+        return;
+      } else if (hasCanvasContent && adapter.regenerateWithFeedback) {
         // 이전 대화 맥락 구성 (최근 5개까지)
         const recentHistory = historyItems
           .slice(0, 5)
@@ -221,7 +274,7 @@ export default function PromptPanel({
     setPrompt("");
   }
 
-  const buttonLabel = hasCanvasContent ? "수정 생성" : "생성";
+  const buttonLabel = hasMask ? "부분 수정" : hasCanvasContent ? "수정 생성" : "생성";
   const currentApiKey = apiKeys[selectedProvider];
 
   return (
@@ -242,9 +295,11 @@ export default function PromptPanel({
           }
         }}
         placeholder={
-          hasCanvasContent
-            ? "현재 이미지를 참조하여 수정합니다... (Ctrl+Enter로 생성)"
-            : "만들고 싶은 스프라이트를 설명하세요... (Ctrl+Enter로 생성)"
+          hasMask
+            ? "마스크 영역을 어떻게 수정할지 설명하세요... (Ctrl+Enter)"
+            : hasCanvasContent
+              ? "현재 이미지를 참조하여 수정합니다... (Ctrl+Enter)"
+              : "만들고 싶은 스프라이트를 설명하세요... (Ctrl+Enter)"
         }
         rows={3}
         className="px-2 py-1.5 text-sm bg-gray-700 rounded border border-gray-600 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
@@ -271,7 +326,12 @@ export default function PromptPanel({
         </div>
       )}
 
-      {hasCanvasContent && (
+      {hasMask && (
+        <p className="text-xs text-purple-400">
+          🎭 마스크 영역만 AI가 수정합니다
+        </p>
+      )}
+      {hasCanvasContent && !hasMask && (
         <p className="text-xs text-gray-500">
           📎 현재 캔버스 이미지가 참조로 첨부됩니다
         </p>
@@ -289,9 +349,11 @@ export default function PromptPanel({
           <button
             onClick={handleGenerate}
             className={`flex-1 px-3 py-2 text-sm rounded transition-colors ${
-              hasCanvasContent
-                ? "bg-green-700 text-white hover:bg-green-600"
-                : "bg-blue-600 text-white hover:bg-blue-500"
+              hasMask
+                ? "bg-purple-700 text-white hover:bg-purple-600"
+                : hasCanvasContent
+                  ? "bg-green-700 text-white hover:bg-green-600"
+                  : "bg-blue-600 text-white hover:bg-blue-500"
             }`}
           >
             {buttonLabel}
