@@ -1,46 +1,69 @@
-import { downscale } from "./downscale";
+import { downscale, downscaleMode } from "./downscale";
 import { paletteMap } from "./paletteMap";
 import { makeTransparentBackground } from "./transparentBackground";
 import type { AIProviderType } from "../types";
 
+export type DownscaleMode = "nearest" | "mode";
+
 interface PipelineOptions {
   targetWidth: number;
   targetHeight: number;
-  /** 팔레트 색상 수 (기본 16) */
+  /** 팔레트 색상 수. 0이면 팔레트 매핑 스킵. */
   paletteSize?: number;
-  /** 제공자 타입으로 모델 유형 자동 판별 */
+  /** 제공자 타입 */
   providerType?: AIProviderType;
+  /** 다운스케일 알고리즘 (기본 mode — AI 픽셀아트에 적합) */
+  downscaleMode?: DownscaleMode;
+  /** 투명 배경 스킵 */
+  skipTransparentBg?: boolean;
+  /** 전체 후처리 스킵 (AI 원본 그대로 사용하되 다운스케일만) */
+  skipAll?: boolean;
 }
 
 /**
  * 후처리 파이프라인.
- * 범용 모델(openai 등): 다운스케일 → 투명 배경 → 팔레트 매핑
- * 특화 모델: 투명 배경 → 팔레트 매핑 (다운스케일 스킵)
- *
- * 투명 배경 감지를 팔레트 매핑 전에 수행하여,
- * 팔레트 매핑이 배경색을 변경하는 문제를 방지.
+ * 범용 모델: 다운스케일 → (투명 배경) → (팔레트 매핑)
+ * skipAll이면 nearest 다운스케일만 수행.
  */
 export function runPostProcess(
   imageData: ImageData,
   options: PipelineOptions
 ): ImageData {
-  const { targetWidth, targetHeight, paletteSize = 16, providerType } = options;
+  const {
+    targetWidth,
+    targetHeight,
+    paletteSize = 16,
+    providerType,
+    downscaleMode: dmode = "mode",
+    skipTransparentBg = false,
+    skipAll = false,
+  } = options;
 
-  // 제공자 타입으로 모델 유형 자동 판별
-  // 현재 지원 제공자는 전부 범용 모델
-  const isGeneral = providerType !== undefined; // 추후 특화 모델 추가 시 조건 변경
-
+  const isGeneral = providerType !== undefined;
   let result = imageData;
 
-  // 범용 모델이면 다운스케일
-  if (isGeneral) {
-    result = downscale(result, targetWidth, targetHeight);
+  if (skipAll) {
+    // 다운스케일만 (AI 원본 그대로)
+    if (isGeneral) {
+      result =
+        dmode === "mode"
+          ? downscaleMode(result, targetWidth, targetHeight)
+          : downscale(result, targetWidth, targetHeight);
+    }
+    return result;
   }
 
-  // 투명 배경을 팔레트 매핑 전에 적용 (원본 색 기반 배경 감지)
-  result = makeTransparentBackground(result);
+  if (isGeneral) {
+    result =
+      dmode === "mode"
+        ? downscaleMode(result, targetWidth, targetHeight)
+        : downscale(result, targetWidth, targetHeight);
+  }
 
-  // 팔레트 매핑 (안티앨리어싱 제거 포함). 0이면 제한 없음(스킵).
+  if (!skipTransparentBg) {
+    result = makeTransparentBackground(result);
+  }
+
   if (paletteSize > 0) {
     result = paletteMap(result, paletteSize);
   }
