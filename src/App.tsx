@@ -85,10 +85,7 @@ function App() {
           <ResolutionSelector />
           <ViewTypeSelector />
           <PaletteSizeSelector />
-          <PostProcessSelector
-            getCanvasImageData={getCanvasImageData}
-            onImageReady={handleImageReady}
-          />
+          <PostProcessSelector onImageReady={handleImageReady} />
         </Sidebar>
         <MainArea>
           <PixelCanvas onReady={setCanvasHandle} disabled={isGenerating} />

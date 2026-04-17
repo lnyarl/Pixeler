@@ -1,32 +1,40 @@
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useCanvasStore } from "@/stores/canvasStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import type { DownscaleAlgorithm } from "@/stores/settingsStore";
-import { paletteMap } from "@/services/ai/postprocess/paletteMap";
-import { makeTransparentBackground } from "@/services/ai/postprocess/transparentBackground";
+import { runPostProcess } from "@/services/ai/postprocess/pipeline";
+import { base64ToImageData } from "@/utils/imageConvert";
 
 interface PostProcessSelectorProps {
-  getCanvasImageData: () => ImageData | null;
   onImageReady: (data: ImageData) => void;
 }
 
 export default function PostProcessSelector({
-  getCanvasImageData,
   onImageReady,
 }: PostProcessSelectorProps) {
   const config = useSettingsStore((s) => s.postProcess);
   const setConfig = useSettingsStore((s) => s.setPostProcess);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
+  const provider = useSettingsStore((s) => s.selectedProvider);
+  const width = useCanvasStore((s) => s.width);
+  const height = useCanvasStore((s) => s.height);
+  const activeItemId = useHistoryStore((s) => s.activeItemId);
+  const items = useHistoryStore((s) => s.items);
 
-  /** 활성화된 단계를 현재 캔버스에 적용 (다운스케일은 스킵 — 이미 목표 해상도이므로) */
-  function applyToCanvas() {
-    const img = getCanvasImageData();
-    if (!img) return;
-    let result = img;
-    if (config.transparentBg) {
-      result = makeTransparentBackground(result);
-    }
-    if (config.paletteMap && paletteSize > 0) {
-      result = paletteMap(result, paletteSize);
-    }
+  const activeItem = items.find((i) => i.id === activeItemId);
+  const canReapply = Boolean(activeItem?.rawBase64);
+
+  /** AI 원본 → 전체 파이프라인 재실행 */
+  async function reapplyFromRaw() {
+    if (!activeItem?.rawBase64) return;
+    const raw = await base64ToImageData(activeItem.rawBase64);
+    const result = runPostProcess(raw, {
+      targetWidth: width,
+      targetHeight: height,
+      providerType: provider,
+      paletteSize,
+      config,
+    });
     onImageReady(result);
   }
 
@@ -34,11 +42,8 @@ export default function PostProcessSelector({
     <div className="flex flex-col gap-2">
       <label className="text-xs text-gray-400 font-medium">후처리</label>
 
-      {/* 다운스케일 알고리즘 */}
       <div className="flex flex-col gap-1">
-        <label className="text-[10px] text-gray-500">
-          다운스케일 (AI 생성 시만)
-        </label>
+        <label className="text-[10px] text-gray-500">다운스케일</label>
         <select
           value={config.downscale}
           onChange={(e) =>
@@ -51,7 +56,6 @@ export default function PostProcessSelector({
         </select>
       </div>
 
-      {/* 투명 배경 토글 */}
       <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
         <input
           type="checkbox"
@@ -62,7 +66,6 @@ export default function PostProcessSelector({
         <span>투명 배경 처리</span>
       </label>
 
-      {/* 팔레트 매핑 토글 */}
       <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
         <input
           type="checkbox"
@@ -73,13 +76,17 @@ export default function PostProcessSelector({
         <span>팔레트 매핑</span>
       </label>
 
-      {/* 수동 적용 */}
       <button
-        onClick={applyToCanvas}
-        className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600"
-        title="활성화된 후처리를 현재 캔버스에 즉시 적용"
+        onClick={reapplyFromRaw}
+        disabled={!canReapply}
+        className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        title={
+          canReapply
+            ? "AI 원본에서 현재 후처리 설정으로 다시 적용"
+            : "AI 원본이 있는 히스토리 항목을 선택해주세요"
+        }
       >
-        현재 캔버스에 적용
+        AI 원본에 재적용
       </button>
     </div>
   );
