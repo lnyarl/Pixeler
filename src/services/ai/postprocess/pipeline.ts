@@ -2,28 +2,26 @@ import { downscale, downscaleMode } from "./downscale";
 import { paletteMap } from "./paletteMap";
 import { makeTransparentBackground } from "./transparentBackground";
 import type { AIProviderType } from "../types";
-
-export type DownscaleMode = "nearest" | "mode";
+import type { PostProcessConfig } from "@/stores/settingsStore";
 
 interface PipelineOptions {
   targetWidth: number;
   targetHeight: number;
-  /** 팔레트 색상 수. 0이면 팔레트 매핑 스킵. */
   paletteSize?: number;
-  /** 제공자 타입 */
   providerType?: AIProviderType;
-  /** 다운스케일 알고리즘 (기본 mode — AI 픽셀아트에 적합) */
-  downscaleMode?: DownscaleMode;
-  /** 투명 배경 스킵 */
-  skipTransparentBg?: boolean;
-  /** 전체 후처리 스킵 (AI 원본 그대로 사용하되 다운스케일만) */
-  skipAll?: boolean;
+  /** 각 단계 on/off + 알고리즘 선택 */
+  config?: PostProcessConfig;
 }
+
+const DEFAULT_CONFIG: PostProcessConfig = {
+  downscale: "mode",
+  transparentBg: true,
+  paletteMap: true,
+};
 
 /**
  * 후처리 파이프라인.
- * 범용 모델: 다운스케일 → (투명 배경) → (팔레트 매핑)
- * skipAll이면 nearest 다운스케일만 수행.
+ * 각 단계를 개별로 on/off 가능.
  */
 export function runPostProcess(
   imageData: ImageData,
@@ -34,37 +32,25 @@ export function runPostProcess(
     targetHeight,
     paletteSize = 16,
     providerType,
-    downscaleMode: dmode = "mode",
-    skipTransparentBg = false,
-    skipAll = false,
+    config = DEFAULT_CONFIG,
   } = options;
 
   const isGeneral = providerType !== undefined;
   let result = imageData;
 
-  if (skipAll) {
-    // 다운스케일만 (AI 원본 그대로)
-    if (isGeneral) {
-      result =
-        dmode === "mode"
-          ? downscaleMode(result, targetWidth, targetHeight)
-          : downscale(result, targetWidth, targetHeight);
-    }
-    return result;
-  }
-
+  // 다운스케일 (범용 모델만)
   if (isGeneral) {
     result =
-      dmode === "mode"
+      config.downscale === "mode"
         ? downscaleMode(result, targetWidth, targetHeight)
         : downscale(result, targetWidth, targetHeight);
   }
 
-  if (!skipTransparentBg) {
+  if (config.transparentBg) {
     result = makeTransparentBackground(result);
   }
 
-  if (paletteSize > 0) {
+  if (config.paletteMap && paletteSize > 0) {
     result = paletteMap(result, paletteSize);
   }
 

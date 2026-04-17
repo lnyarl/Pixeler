@@ -6,16 +6,27 @@ interface ApiKeys {
   stability: string;
 }
 
+export type DownscaleAlgorithm = "mode" | "nearest";
+
+/** 후처리 단계별 on/off */
+export interface PostProcessConfig {
+  downscale: DownscaleAlgorithm;
+  transparentBg: boolean;
+  paletteMap: boolean;
+}
+
 export interface SettingsState {
   apiKeys: ApiKeys;
   selectedProvider: AIProviderType;
   viewType: ViewType;
   paletteSize: number;
+  postProcess: PostProcessConfig;
   setApiKey: (provider: AIProviderType, key: string) => void;
   removeApiKey: (provider: AIProviderType) => void;
   setSelectedProvider: (provider: AIProviderType) => void;
   setViewType: (viewType: ViewType) => void;
   setPaletteSize: (size: number) => void;
+  setPostProcess: (patch: Partial<PostProcessConfig>) => void;
 }
 
 const STORAGE_KEY = "pixeler_api_keys";
@@ -39,6 +50,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   selectedProvider: "openai",
   viewType: "side",
   paletteSize: 16,
+  postProcess: {
+    downscale: "mode",
+    transparentBg: true,
+    paletteMap: true,
+  },
 
   setApiKey: (provider, key) => {
     const updated = { ...get().apiKeys, [provider]: key };
@@ -57,4 +73,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setPaletteSize: (size) => {
     if (size === 0 || (size >= 4 && size <= 64)) set({ paletteSize: size });
   },
+  setPostProcess: (patch) =>
+    set((state) => ({ postProcess: { ...state.postProcess, ...patch } })),
 }));

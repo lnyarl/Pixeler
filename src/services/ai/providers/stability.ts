@@ -30,7 +30,8 @@ export class StabilityAdapter implements AIAdapter {
       options.prompt,
       options.width,
       options.height,
-      options.viewType
+      options.viewType,
+      options.paletteSize
     );
 
     // Stability는 복수 출력을 지원하지 않으므로 반복 호출.
@@ -132,7 +133,8 @@ export class StabilityAdapter implements AIAdapter {
       options.prompt,
       options.width,
       options.height,
-      options.viewType
+      options.viewType,
+      options.paletteSize
     );
 
     const formData = new FormData();

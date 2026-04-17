@@ -13,6 +13,8 @@ export interface GenerateOptions {
   viewType: ViewType;
   /** 생성할 이미지 수 (1~4) */
   count: number;
+  /** 팔레트 색상 수 — 프롬프트에 삽입 (0이면 제한 없음) */
+  paletteSize?: number;
   /** 요청 취소용 */
   signal?: AbortSignal;
 }
@@ -26,6 +28,8 @@ export interface InpaintOptions {
   mask: string;
   width: number;
   height: number;
+  /** 팔레트 색상 수 (0이면 제한 없음) */
+  paletteSize?: number;
   signal?: AbortSignal;
 }
 
@@ -40,6 +44,8 @@ export interface FeedbackOptions {
   width: number;
   height: number;
   viewType: ViewType;
+  /** 팔레트 색상 수 (0이면 제한 없음) */
+  paletteSize?: number;
   signal?: AbortSignal;
 }
 

@@ -31,7 +31,8 @@ export class OpenAIAdapter implements AIAdapter {
       options.prompt,
       options.width,
       options.height,
-      options.viewType
+      options.viewType,
+      options.paletteSize
     );
 
     const response = await fetchWithRetry(
@@ -121,7 +122,8 @@ export class OpenAIAdapter implements AIAdapter {
       options.prompt,
       options.width,
       options.height,
-      options.viewType
+      options.viewType,
+      options.paletteSize
     );
 
     // 참조 이미지와 함께 edit API 사용

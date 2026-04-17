@@ -59,6 +59,7 @@ export default function PromptPanel({
   const apiKeys = useSettingsStore((s) => s.apiKeys);
   const viewType = useSettingsStore((s) => s.viewType);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
+  const postProcess = useSettingsStore((s) => s.postProcess);
   const addHistoryItem = useHistoryStore((s) => s.addItem);
   const historyItems = useHistoryStore((s) => s.items);
   const width = useCanvasStore((s) => s.width);
@@ -110,7 +111,8 @@ export default function PromptPanel({
           prompt,
           width,
           height,
-          viewType
+          viewType,
+          paletteSize
         );
 
         const imageBase64 = imageDataToBase64(canvasData!);
@@ -138,6 +140,7 @@ export default function PromptPanel({
             mask: maskBase64,
             width,
             height,
+            paletteSize,
             signal: controller.signal,
           });
 
@@ -147,6 +150,7 @@ export default function PromptPanel({
             targetHeight: height,
             providerType: selectedProvider,
             paletteSize,
+            config: postProcess,
           });
           const composited = compositeWithMask(canvasData!, processed, maskData!);
           const compositedBase64 = imageDataToBase64(composited);
@@ -190,7 +194,8 @@ export default function PromptPanel({
           prompt,
           width,
           height,
-          viewType
+          viewType,
+          paletteSize
         );
         const referenceBase64 = imageDataToBase64(canvasData!);
 
@@ -216,6 +221,7 @@ export default function PromptPanel({
             width,
             height,
             viewType,
+            paletteSize,
             signal: controller.signal,
           });
           // 첫 결과를 로그에 기록 (1장 기준, 다중일 때는 첫 장만)
@@ -234,7 +240,13 @@ export default function PromptPanel({
         return;
       } else {
         // === 새 생성 (텍스트만) ===
-        const finalPrompt = buildGeneratePrompt(prompt, width, height, viewType);
+        const finalPrompt = buildGeneratePrompt(
+          prompt,
+          width,
+          height,
+          viewType,
+          paletteSize
+        );
 
         const logId = startLog({
           mode: "generate",
@@ -257,6 +269,7 @@ export default function PromptPanel({
             height,
             viewType,
             count,
+            paletteSize,
             signal: controller.signal,
           });
           updateLog(logId, {
@@ -299,6 +312,7 @@ export default function PromptPanel({
           targetHeight: height,
           providerType: selectedProvider,
           paletteSize,
+          config: postProcess,
         });
         return { draft: result, imageData };
       })
