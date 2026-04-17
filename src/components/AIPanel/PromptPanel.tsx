@@ -9,9 +9,10 @@ import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import {
   buildGeneratePrompt,
   buildFeedbackPrompt,
+  buildMaskedFeedbackPrompt,
 } from "@/services/ai/promptBuilder";
 import { base64ToImageData, imageDataToBase64 } from "@/utils/imageConvert";
-import { compositeWithMask } from "@/utils/compositeWithMask";
+import { overlayMaskOnImage } from "@/utils/overlayMask";
 import type { GeneratedImage } from "@/services/ai/types";
 
 let devCounter = 0;
@@ -102,11 +103,10 @@ export default function PromptPanel({
       const adapter = createAdapter(selectedProvider, apiKey);
       let results: GeneratedImage[];
 
-      if (hasMask && hasCanvasContent && adapter.inpaint) {
-        // === 부분 수정 (Inpainting) ===
+      if (hasMask && hasCanvasContent && adapter.regenerateWithFeedback) {
+        // === 부분 수정 (마스크 오버레이 + img2img) ===
         const recentHistory = buildRecentHistory();
-        // 부분 수정도 이전 프롬프트 포함 — buildFeedbackPrompt 사용
-        const finalPrompt = buildFeedbackPrompt(
+        const finalPrompt = buildMaskedFeedbackPrompt(
           recentHistory,
           prompt,
           width,
@@ -115,14 +115,16 @@ export default function PromptPanel({
           paletteSize
         );
 
-        const imageBase64 = imageDataToBase64(canvasData!);
+        // 참조 이미지에 마스크를 반투명 빨강으로 오버레이
+        const overlaidImage = overlayMaskOnImage(canvasData!, maskData!);
+        const referenceBase64 = imageDataToBase64(overlaidImage);
         const maskBase64 = imageDataToBase64(maskData!);
 
         const logId = startLog({
           mode: "inpaint",
           userPrompt: prompt,
           finalPrompt,
-          referenceImage: imageBase64,
+          referenceImage: referenceBase64,
           maskImage: maskBase64,
           meta: {
             provider: selectedProvider,
@@ -134,50 +136,23 @@ export default function PromptPanel({
         });
 
         try {
-          const result = await adapter.inpaint({
-            prompt: finalPrompt,
-            image: imageBase64,
-            mask: maskBase64,
+          const maskResults = await adapter.regenerateWithFeedback({
+            prompt,
+            originalPrompt: recentHistory,
+            referenceImage: referenceBase64,
             width,
             height,
+            viewType,
             paletteSize,
             signal: controller.signal,
           });
 
-          const rawImageData = await base64ToImageData(result.base64);
-          const processed = runPostProcess(rawImageData, {
-            targetWidth: width,
-            targetHeight: height,
-            providerType: selectedProvider,
-            paletteSize,
-            config: postProcess,
-          });
-          const composited = compositeWithMask(canvasData!, processed, maskData!);
-          const compositedBase64 = imageDataToBase64(composited);
-          const processedBase64 = imageDataToBase64(processed);
-
           updateLog(logId, {
-            rawOutput: result.base64,
-            processedOutput: processedBase64,
-            compositedOutput: compositedBase64,
+            rawOutput: maskResults[0]?.base64,
             meta: { durationMs: Date.now() - startTime },
           });
-
-          onImageReady(composited);
-
-          const currentActiveId = useHistoryStore.getState().activeItemId;
-          addHistoryItem({
-            prompt: `[부분 수정] ${prompt}`,
-            thumbnail: compositedBase64,
-            imageData: composited,
-            type: "inpaint",
-            parentId: currentActiveId,
-            rawBase64: result.base64,
-          });
-
+          await finalizeResults(maskResults, "inpaint", logId);
           clearMask();
-          setPrompt("");
-          setDrafts([]);
         } catch (err) {
           updateLog(logId, {
             error: err instanceof Error ? err.message : String(err),
@@ -295,10 +270,10 @@ export default function PromptPanel({
     }
   }
 
-  /** 후처리 + 캔버스 로드 + 히스토리 저장 (generate/feedback 공용) */
+  /** 후처리 + 캔버스 로드 + 히스토리 저장 (generate/feedback/inpaint 공용) */
   async function finalizeResults(
     results: GeneratedImage[],
-    historyType: "generate" | "feedback",
+    historyType: "generate" | "feedback" | "inpaint",
     logId: string
   ) {
     const currentActiveId = useHistoryStore.getState().activeItemId;
@@ -328,10 +303,13 @@ export default function PromptPanel({
       onImageReady(processedImages[0].imageData);
     }
 
+    const historyPromptLabel =
+      historyType === "inpaint" ? `[부분 수정] ${prompt}` : prompt;
+
     const processed: ProcessedDraft[] = processedImages.map((item) => {
       const thumbnail = imageDataToBase64(item.imageData);
       const historyId = addHistoryItem({
-        prompt,
+        prompt: historyPromptLabel,
         thumbnail,
         imageData: item.imageData,
         type: historyType,

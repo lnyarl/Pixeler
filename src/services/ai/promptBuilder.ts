@@ -49,3 +49,23 @@ export function buildFeedbackPrompt(
     buildStyleLine(width, height, viewType, paletteSize),
   ].join("\n");
 }
+
+/**
+ * 마스크 오버레이 기반 부분 수정 프롬프트.
+ * 참조 이미지에 빨간색으로 마스킹 영역이 표시되어 있음을 AI에 설명.
+ */
+export function buildMaskedFeedbackPrompt(
+  originalPrompt: string,
+  feedback: string,
+  width: number,
+  height: number,
+  viewType: ViewType,
+  paletteSize: number = 0
+): string {
+  return [
+    `Original: ${originalPrompt}`,
+    `Change: ${feedback}`,
+    `The area marked with red semi-transparent overlay in the reference image is where this change should be applied. Only modify that area while keeping the rest of the image as similar as possible to the reference.`,
+    buildStyleLine(width, height, viewType, paletteSize),
+  ].join("\n");
+}
