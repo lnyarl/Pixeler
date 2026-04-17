@@ -19,6 +19,7 @@ import DraftGrid from "./components/AIPanel/DraftGrid";
 import ErrorDisplay from "./components/AIPanel/ErrorDisplay";
 import HistoryPanel from "./components/History/HistoryPanel";
 import DevRawPreview from "./components/AIPanel/DevRawPreview";
+import DebugLogPanel from "./components/Debug/DebugLogPanel";
 import ExportButton from "./components/Export/ExportButton";
 import { useGenerationStore } from "./stores/generationStore";
 import { useResponsive } from "./hooks/useResponsive";
@@ -106,6 +107,7 @@ function App() {
       {settingsOpen && (
         <ApiKeySettings onClose={() => setSettingsOpen(false)} />
       )}
+      <DebugLogPanel />
     </div>
   );
 }
