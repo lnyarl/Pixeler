@@ -58,7 +58,6 @@ export default function PromptPanel({
 
   const selectedProvider = useSettingsStore((s) => s.selectedProvider);
   const apiKeys = useSettingsStore((s) => s.apiKeys);
-  const viewType = useSettingsStore((s) => s.viewType);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const postProcess = useSettingsStore((s) => s.postProcess);
   const addHistoryItem = useHistoryStore((s) => s.addItem);
@@ -111,7 +110,6 @@ export default function PromptPanel({
           prompt,
           width,
           height,
-          viewType,
           paletteSize
         );
 
@@ -130,7 +128,6 @@ export default function PromptPanel({
             provider: selectedProvider,
             width,
             height,
-            viewType,
             paletteSize,
           },
         });
@@ -142,7 +139,6 @@ export default function PromptPanel({
             referenceImage: referenceBase64,
             width,
             height,
-            viewType,
             paletteSize,
             masked: true,
             signal: controller.signal,
@@ -170,7 +166,6 @@ export default function PromptPanel({
           prompt,
           width,
           height,
-          viewType,
           paletteSize
         );
         const referenceBase64 = imageDataToBase64(canvasData!);
@@ -184,7 +179,6 @@ export default function PromptPanel({
             provider: selectedProvider,
             width,
             height,
-            viewType,
             paletteSize,
           },
         });
@@ -196,7 +190,6 @@ export default function PromptPanel({
             referenceImage: referenceBase64,
             width,
             height,
-            viewType,
             paletteSize,
             signal: controller.signal,
           });
@@ -220,7 +213,6 @@ export default function PromptPanel({
           prompt,
           width,
           height,
-          viewType,
           paletteSize
         );
 
@@ -232,7 +224,6 @@ export default function PromptPanel({
             provider: selectedProvider,
             width,
             height,
-            viewType,
             paletteSize,
             count,
           },
@@ -243,7 +234,6 @@ export default function PromptPanel({
             prompt,
             width,
             height,
-            viewType,
             count,
             paletteSize,
             signal: controller.signal,

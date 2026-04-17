@@ -27,7 +27,6 @@ export interface DebugLogEntry {
     provider: string;
     width: number;
     height: number;
-    viewType?: string;
     paletteSize?: number;
     count?: number;
     durationMs?: number;

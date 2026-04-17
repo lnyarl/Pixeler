@@ -10,7 +10,6 @@ export interface GenerateOptions {
   prompt: string;
   width: number;
   height: number;
-  viewType: ViewType;
   /** 생성할 이미지 수 (1~4) */
   count: number;
   /** 팔레트 색상 수 — 프롬프트에 삽입 (0이면 제한 없음) */
@@ -29,7 +28,6 @@ export interface FeedbackOptions {
   referenceImage: string;
   width: number;
   height: number;
-  viewType: ViewType;
   /** 팔레트 색상 수 (0이면 제한 없음) */
   paletteSize?: number;
   /**
@@ -51,8 +49,6 @@ export interface GeneratedImage {
     timestamp: number;
   };
 }
-
-export type ViewType = "top-down" | "side" | "quarter";
 
 export type AIProviderType = "openai" | "stability";
 

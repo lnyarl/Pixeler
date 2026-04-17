@@ -32,7 +32,6 @@ export class StabilityAdapter implements AIAdapter {
       options.prompt,
       options.width,
       options.height,
-      options.viewType,
       options.paletteSize
     );
 
@@ -101,7 +100,6 @@ export class StabilityAdapter implements AIAdapter {
       options.prompt,
       options.width,
       options.height,
-      options.viewType,
       options.paletteSize
     );
 

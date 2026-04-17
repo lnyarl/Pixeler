@@ -7,7 +7,6 @@ import ResolutionSelector from "./components/Toolbar/ResolutionSelector";
 import ToolSelector from "./components/Toolbar/ToolSelector";
 import ColorPicker from "./components/Toolbar/ColorPicker";
 import BrushSizeSelector from "./components/Toolbar/BrushSizeSelector";
-import ViewTypeSelector from "./components/Toolbar/ViewTypeSelector";
 import PaletteSizeSelector from "./components/Toolbar/PaletteSizeSelector";
 import PostProcessSelector from "./components/Toolbar/PostProcessSelector";
 import PixelCanvas from "./components/Canvas/PixelCanvas";
@@ -83,7 +82,6 @@ function App() {
           <BrushSizeSelector />
           <hr className="border-gray-700" />
           <ResolutionSelector />
-          <ViewTypeSelector />
           <PaletteSizeSelector />
           <PostProcessSelector onImageReady={handleImageReady} />
         </Sidebar>

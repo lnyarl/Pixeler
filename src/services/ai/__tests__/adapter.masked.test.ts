@@ -28,7 +28,6 @@ describe("OpenAI adapter masked feedback contract", () => {
       referenceImage: "dGVzdA==", // "test" base64
       width: 32,
       height: 32,
-      viewType: "side",
       paletteSize: 16,
       masked: true,
     });
@@ -56,7 +55,6 @@ describe("OpenAI adapter masked feedback contract", () => {
       referenceImage: "dGVzdA==",
       width: 32,
       height: 32,
-      viewType: "side",
       paletteSize: 16,
     });
 

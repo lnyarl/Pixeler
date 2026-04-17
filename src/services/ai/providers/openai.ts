@@ -33,7 +33,6 @@ export class OpenAIAdapter implements AIAdapter {
       options.prompt,
       options.width,
       options.height,
-      options.viewType,
       options.paletteSize
     );
 
@@ -87,7 +86,6 @@ export class OpenAIAdapter implements AIAdapter {
       options.prompt,
       options.width,
       options.height,
-      options.viewType,
       options.paletteSize
     );
 

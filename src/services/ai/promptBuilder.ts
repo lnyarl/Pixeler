@@ -1,24 +1,14 @@
-import type { ViewType } from "./types";
-
-const VIEW_TYPE_LABELS: Record<ViewType, string> = {
-  "top-down": "top-down view",
-  side: "side view",
-  quarter: "isometric quarter view",
-};
-
 function buildStyleLine(
   width: number,
   height: number,
-  viewType: ViewType,
   paletteSize: number
 ): string {
   const sizeStr = `${width}x${height}`;
-  const viewStr = VIEW_TYPE_LABELS[viewType];
   const paletteStr =
     paletteSize > 0
       ? `strictly limited ${paletteSize}-color palette`
       : `limited color palette`;
-  return `Style: ${sizeStr} pixel art, ${viewStr}, clean pixel art style, ${paletteStr}, no anti-aliasing, transparent background.`;
+  return `Style: ${sizeStr} pixel art, clean pixel art style, ${paletteStr}, no anti-aliasing, transparent background.`;
 }
 
 /** 새 생성 프롬프트 */
@@ -26,12 +16,9 @@ export function buildGeneratePrompt(
   userPrompt: string,
   width: number,
   height: number,
-  viewType: ViewType,
   paletteSize: number = 0
 ): string {
-  return [userPrompt, buildStyleLine(width, height, viewType, paletteSize)].join(
-    "\n"
-  );
+  return [userPrompt, buildStyleLine(width, height, paletteSize)].join("\n");
 }
 
 /** 피드백 기반 재생성 프롬프트 */
@@ -40,13 +27,12 @@ export function buildFeedbackPrompt(
   feedback: string,
   width: number,
   height: number,
-  viewType: ViewType,
   paletteSize: number = 0
 ): string {
   return [
     `Original: ${originalPrompt}`,
     `Change: ${feedback}`,
-    buildStyleLine(width, height, viewType, paletteSize),
+    buildStyleLine(width, height, paletteSize),
   ].join("\n");
 }
 
@@ -59,13 +45,12 @@ export function buildMaskedFeedbackPrompt(
   feedback: string,
   width: number,
   height: number,
-  viewType: ViewType,
   paletteSize: number = 0
 ): string {
   return [
     `Original: ${originalPrompt}`,
     `Change: ${feedback}`,
     `The area marked with red semi-transparent overlay in the reference image is where this change should be applied. Only modify that area while keeping the rest of the image as similar as possible to the reference.`,
-    buildStyleLine(width, height, viewType, paletteSize),
+    buildStyleLine(width, height, paletteSize),
   ].join("\n");
 }

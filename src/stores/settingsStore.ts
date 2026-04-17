@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { AIProviderType, ViewType } from "@/services/ai/types";
+import type { AIProviderType } from "@/services/ai/types";
 
 interface ApiKeys {
   openai: string;
@@ -18,13 +18,11 @@ export interface PostProcessConfig {
 export interface SettingsState {
   apiKeys: ApiKeys;
   selectedProvider: AIProviderType;
-  viewType: ViewType;
   paletteSize: number;
   postProcess: PostProcessConfig;
   setApiKey: (provider: AIProviderType, key: string) => void;
   removeApiKey: (provider: AIProviderType) => void;
   setSelectedProvider: (provider: AIProviderType) => void;
-  setViewType: (viewType: ViewType) => void;
   setPaletteSize: (size: number) => void;
   setPostProcess: (patch: Partial<PostProcessConfig>) => void;
 }
@@ -48,7 +46,6 @@ function saveApiKeys(keys: ApiKeys) {
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   apiKeys: loadApiKeys(),
   selectedProvider: "openai",
-  viewType: "side",
   paletteSize: 16,
   postProcess: {
     downscale: "mode",
@@ -69,7 +66,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   setSelectedProvider: (provider) => set({ selectedProvider: provider }),
-  setViewType: (viewType) => set({ viewType }),
   setPaletteSize: (size) => {
     if (size === 0 || (size >= 4 && size <= 64)) set({ paletteSize: size });
   },
