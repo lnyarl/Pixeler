@@ -18,45 +18,39 @@ export default function DebugLogPanel() {
         🪵 DEBUG ({entries.length})
       </button>
 
-      {/* 패널 */}
+      {/* 패널 — 전체 화면 */}
       {open && (
-        <div className="fixed inset-0 z-50 flex">
-          {/* 백드롭 */}
-          <div
-            className="flex-1 bg-black/60"
-            onClick={() => setOpen(false)}
-          />
-          {/* 사이드 패널 */}
-          <div className="w-[600px] max-w-[90vw] bg-gray-900 border-l border-gray-700 flex flex-col">
-            <div className="flex items-center justify-between p-3 border-b border-gray-700">
-              <h2 className="text-sm font-bold text-yellow-400">
-                🪵 디버그 로그 ({entries.length})
-              </h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={clear}
-                  className="text-xs text-gray-400 hover:text-red-400"
-                >
-                  전체 삭제
-                </button>
-                <button
-                  onClick={() => setOpen(false)}
-                  className="text-gray-400 hover:text-white text-xl leading-none"
-                >
-                  ×
-                </button>
-              </div>
+        <div className="fixed inset-0 z-50 bg-gray-900 flex flex-col">
+          <div className="flex items-center justify-between p-3 border-b border-gray-700">
+            <h2 className="text-sm font-bold text-yellow-400">
+              🪵 디버그 로그 ({entries.length})
+            </h2>
+            <div className="flex gap-3 items-center">
+              <button
+                onClick={clear}
+                className="text-xs text-gray-400 hover:text-red-400"
+              >
+                전체 삭제
+              </button>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-gray-400 hover:text-white text-xl leading-none px-2"
+              >
+                ×
+              </button>
             </div>
+          </div>
 
-            <div className="flex-1 overflow-y-auto">
-              {entries.length === 0 ? (
-                <p className="p-3 text-xs text-gray-500">아직 로그 없음</p>
-              ) : (
-                entries.map((entry) => (
+          <div className="flex-1 overflow-y-auto">
+            {entries.length === 0 ? (
+              <p className="p-3 text-xs text-gray-500">아직 로그 없음</p>
+            ) : (
+              <div className="max-w-[1400px] mx-auto">
+                {entries.map((entry) => (
                   <DebugLogEntryRow key={entry.id} entry={entry} />
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -147,7 +141,7 @@ function DebugLogEntryRow({ entry }: { entry: DebugLogEntry }) {
             </Section>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
             {entry.referenceImage && (
               <ImageSlot
                 label="입력: 참조 이미지"
