@@ -9,7 +9,7 @@ export default function Sidebar({ children, disabled }: SidebarProps) {
   const { size, handleMouseDown } = useResizable({
     defaultSize: 240,
     minSize: 180,
-    maxSize: 360,
+    maxSize: Infinity,
     direction: "left",
   });
 

@@ -8,7 +8,7 @@ export default function AIPanel({ children }: AIPanelProps) {
   const { size, handleMouseDown } = useResizable({
     defaultSize: 320,
     minSize: 240,
-    maxSize: 480,
+    maxSize: Infinity,
     direction: "right",
   });
 
