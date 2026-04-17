@@ -2,12 +2,15 @@ import type {
   AIAdapter,
   GenerateOptions,
   GeneratedImage,
-  InpaintOptions,
   FeedbackOptions,
   ProviderCapabilities,
 } from "../types";
 import { fetchWithRetry } from "../fetchWithRetry";
-import { buildGeneratePrompt, buildFeedbackPrompt } from "../promptBuilder";
+import {
+  buildGeneratePrompt,
+  buildFeedbackPrompt,
+  buildMaskedFeedbackPrompt,
+} from "../promptBuilder";
 import { base64ToBlob } from "@/utils/imageConvert";
 
 const API_BASE = import.meta.env.DEV
@@ -18,7 +21,6 @@ export class StabilityAdapter implements AIAdapter {
   readonly name = "Stability AI";
   readonly providerType = "stability" as const;
   readonly capabilities: ProviderCapabilities = {
-    supportsInpainting: true,
     supportsMultipleOutputs: false,
     supportsImageReference: true,
   };
@@ -88,47 +90,13 @@ export class StabilityAdapter implements AIAdapter {
     return results;
   }
 
-  async inpaint(options: InpaintOptions): Promise<GeneratedImage> {
-    const formData = new FormData();
-    formData.append("prompt", options.prompt);
-    formData.append("image", base64ToBlob(options.image), "image.png");
-    formData.append("mask", base64ToBlob(options.mask), "mask.png");
-    formData.append("output_format", "png");
-
-    const response = await fetchWithRetry(
-      `${API_BASE}/stable-image/edit/inpaint`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.apiKey}`,
-          Accept: "application/json",
-        },
-        body: formData,
-      },
-      { signal: options.signal }
-    );
-
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
-      throwApiError(response.status, errorBody);
-    }
-
-    const data = await response.json();
-    return {
-      base64: data.image,
-      metadata: {
-        provider: this.name,
-        model: "stable-image-inpaint",
-        prompt: options.prompt,
-        timestamp: Date.now(),
-      },
-    };
-  }
-
   async regenerateWithFeedback(
     options: FeedbackOptions
   ): Promise<GeneratedImage[]> {
-    const prompt = buildFeedbackPrompt(
+    const promptBuilder = options.masked
+      ? buildMaskedFeedbackPrompt
+      : buildFeedbackPrompt;
+    const prompt = promptBuilder(
       options.originalPrompt,
       options.prompt,
       options.width,

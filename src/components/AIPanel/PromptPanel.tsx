@@ -144,6 +144,7 @@ export default function PromptPanel({
             height,
             viewType,
             paletteSize,
+            masked: true,
             signal: controller.signal,
           });
 
@@ -449,7 +450,7 @@ export default function PromptPanel({
 
       {hasMask && (
         <p className="text-xs text-purple-400">
-          🎭 마스크 영역만 AI가 수정합니다
+          🎭 마스크 영역을 주목하여 수정 — 주변도 자연스럽게 바뀔 수 있음
         </p>
       )}
       {hasCanvasContent && !hasMask && (

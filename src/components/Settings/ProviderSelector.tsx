@@ -10,7 +10,6 @@ const PROVIDERS: {
     type: "openai",
     label: "OpenAI",
     capabilities: {
-      supportsInpainting: true,
       supportsMultipleOutputs: true,
       supportsImageReference: true,
     },
@@ -19,7 +18,6 @@ const PROVIDERS: {
     type: "stability",
     label: "Stability",
     capabilities: {
-      supportsInpainting: true,
       supportsMultipleOutputs: false,
       supportsImageReference: true,
     },
@@ -65,7 +63,6 @@ export function getProviderCapabilities(
 ): ProviderCapabilities {
   return (
     PROVIDERS.find((p) => p.type === provider)?.capabilities ?? {
-      supportsInpainting: false,
       supportsMultipleOutputs: false,
       supportsImageReference: false,
     }
