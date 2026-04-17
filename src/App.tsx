@@ -22,7 +22,6 @@ import HistoryPanel from "./components/History/HistoryPanel";
 import DevRawPreview from "./components/AIPanel/DevRawPreview";
 import DebugLogPanel from "./components/Debug/DebugLogPanel";
 import ExportButton from "./components/Export/ExportButton";
-import ApplyPostProcess from "./components/AIPanel/ApplyPostProcess";
 import { useGenerationStore } from "./stores/generationStore";
 import { useResponsive } from "./hooks/useResponsive";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
@@ -86,7 +85,10 @@ function App() {
           <ResolutionSelector />
           <ViewTypeSelector />
           <PaletteSizeSelector />
-          <PostProcessSelector />
+          <PostProcessSelector
+            getCanvasImageData={getCanvasImageData}
+            onImageReady={handleImageReady}
+          />
         </Sidebar>
         <MainArea>
           <PixelCanvas onReady={setCanvasHandle} disabled={isGenerating} />
@@ -102,10 +104,6 @@ function App() {
           <ErrorDisplay />
           <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
           <DevRawPreview />
-          <ApplyPostProcess
-            getCanvasImageData={getCanvasImageData}
-            onImageReady={handleImageReady}
-          />
           <ExportButton getCanvasImageData={getCanvasImageData} />
           <hr className="border-gray-700" />
           <HistoryPanel onRestore={handleImageReady} />
