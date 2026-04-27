@@ -51,7 +51,7 @@ export function runPostProcess(
   }
 
   if (config.paletteMap && paletteSize > 0) {
-    result = paletteMap(result, paletteSize);
+    result = paletteMap(result, paletteSize).result;
   }
 
   return result;
