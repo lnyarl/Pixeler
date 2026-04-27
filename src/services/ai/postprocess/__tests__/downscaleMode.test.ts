@@ -78,4 +78,90 @@ describe("downscaleMode", () => {
     expect(result.width).toBe(4);
     expect(result.height).toBe(2);
   });
+
+  // T11: 16단계 양자화 키 결정론 검증 (기획서 §9.1).
+  // (200,200,200,255) 12개 + (255,255,255,255) 4개 → 12개 우세 색 선택.
+  // `>>4` 시 200 → 12, 255 → 15 → 키 분리. 12:4 비동률로 비결정성 제거.
+  it("T11: 16단계 양자화 키 비동률 12:4 — 우세 색 정확 선택", () => {
+    const src = new ImageData(4, 4);
+    // 전체 16픽셀 중 12개를 (200,200,200,255), 4개를 (255,255,255,255)
+    // 좌상단 4x3 = 12픽셀 (200) + 마지막 행 4픽셀 (255)
+    function set(x: number, y: number, r: number, g: number, b: number) {
+      const idx = (y * 4 + x) * 4;
+      src.data[idx] = r;
+      src.data[idx + 1] = g;
+      src.data[idx + 2] = b;
+      src.data[idx + 3] = 255;
+    }
+    for (let y = 0; y < 3; y++) {
+      for (let x = 0; x < 4; x++) {
+        set(x, y, 200, 200, 200);
+      }
+    }
+    for (let x = 0; x < 4; x++) {
+      set(x, 3, 255, 255, 255);
+    }
+
+    // 4×4 → 1×1: 한 블록에 (200) 12개 + (255) 4개 → 200 키가 우세.
+    const result = downscaleMode(src, 1, 1);
+    expect(result.data[0]).toBe(200);
+    expect(result.data[1]).toBe(200);
+    expect(result.data[2]).toBe(200);
+    expect(result.data[3]).toBe(255);
+  });
+
+  // T11b: 16단계 양자화 — 색 거리가 가까워도(>>6 시 같은 키였을 색)
+  // >>4 양자화로 분리됨 검증. (200,200,200)과 (220,220,220)은 >>4 시
+  // 12 vs 13으로 다른 키 → 다수쪽이 정확히 선택됨.
+  it("T11b: 16단계 양자화로 인접 색 분리 — 4단계로는 같은 키였을 케이스", () => {
+    const src = new ImageData(4, 4);
+    function set(x: number, y: number, r: number, g: number, b: number) {
+      const idx = (y * 4 + x) * 4;
+      src.data[idx] = r;
+      src.data[idx + 1] = g;
+      src.data[idx + 2] = b;
+      src.data[idx + 3] = 255;
+    }
+    // (200) 픽셀 10개, (220) 픽셀 6개 → 200이 우세
+    let count = 0;
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 4; x++) {
+        if (count < 10) {
+          set(x, y, 200, 200, 200);
+        } else {
+          set(x, y, 220, 220, 220);
+        }
+        count++;
+      }
+    }
+    const result = downscaleMode(src, 1, 1);
+    expect(result.data[0]).toBe(200);
+    expect(result.data[1]).toBe(200);
+    expect(result.data[2]).toBe(200);
+  });
+
+  // T12: blockW < 1 → nearest 폴백 (기획서 §6.2 변경 1).
+  // src=33, target=32 → blockW≈1.03 (≥1, 폴백 안 함). src=16, target=32 → blockW=0.5 (폴백).
+  it("T12: blockW < 1이면 nearest 폴백 작동, (0,0,0,0) 픽셀 발생 안 함", () => {
+    const src = new ImageData(16, 16);
+    // 모두 빨강
+    for (let i = 0; i < src.data.length; i += 4) {
+      src.data[i] = 255;
+      src.data[i + 1] = 0;
+      src.data[i + 2] = 0;
+      src.data[i + 3] = 255;
+    }
+
+    // 16 → 32 (블록폭 0.5, blockW<1 케이스) — 폴백이 nearest로 처리해야 함
+    const result = downscaleMode(src, 32, 32);
+    expect(result.width).toBe(32);
+    expect(result.height).toBe(32);
+    // 모든 출력 픽셀이 빨강이어야 (0,0,0,0) 검정 투명 픽셀 없음
+    for (let i = 0; i < result.data.length; i += 4) {
+      expect(result.data[i]).toBe(255);
+      expect(result.data[i + 1]).toBe(0);
+      expect(result.data[i + 2]).toBe(0);
+      expect(result.data[i + 3]).toBe(255);
+    }
+  });
 });
