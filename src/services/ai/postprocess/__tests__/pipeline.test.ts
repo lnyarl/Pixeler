@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { runPostProcess } from "../pipeline";
 
 describe("runPostProcess", () => {
-  it("범용 모델: 다운스케일이 적용된다", () => {
+  it("범용 모델: 다운스케일이 적용된다", async () => {
     const src = new ImageData(8, 8);
     // 빨간 픽셀로 채움
     for (let i = 0; i < src.data.length; i += 4) {
@@ -12,7 +12,7 @@ describe("runPostProcess", () => {
       src.data[i + 3] = 255;
     }
 
-    const result = runPostProcess(src, {
+    const result = await runPostProcess(src, {
       targetWidth: 4,
       targetHeight: 4,
       providerType: "openai",
@@ -22,7 +22,7 @@ describe("runPostProcess", () => {
     expect(result.height).toBe(4);
   });
 
-  it("파이프라인 실행 후 색상 수가 제한된다", () => {
+  it("파이프라인 실행 후 색상 수가 제한된다", async () => {
     const src = new ImageData(4, 4);
     // 다양한 색상
     for (let i = 0; i < src.data.length; i += 4) {
@@ -32,7 +32,7 @@ describe("runPostProcess", () => {
       src.data[i + 3] = 255;
     }
 
-    const result = runPostProcess(src, {
+    const result = await runPostProcess(src, {
       targetWidth: 4,
       targetHeight: 4,
       paletteSize: 4,

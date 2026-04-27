@@ -28,7 +28,7 @@ export default function PostProcessSelector({
   async function reapplyFromRaw() {
     if (!activeItem?.rawBase64) return;
     const raw = await base64ToImageData(activeItem.rawBase64);
-    const result = runPostProcess(raw, {
+    const result: ImageData = await runPostProcess(raw, {
       targetWidth: width,
       targetHeight: height,
       providerType: provider,

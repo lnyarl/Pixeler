@@ -273,7 +273,7 @@ export default function PromptPanel({
     const processedImages = await Promise.all(
       results.map(async (result) => {
         const rawImageData = await base64ToImageData(result.base64);
-        const imageData = runPostProcess(rawImageData, {
+        const imageData: ImageData = await runPostProcess(rawImageData, {
           targetWidth: width,
           targetHeight: height,
           providerType: selectedProvider,

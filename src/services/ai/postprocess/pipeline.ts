@@ -23,10 +23,10 @@ const DEFAULT_CONFIG: PostProcessConfig = {
  * 후처리 파이프라인.
  * 각 단계를 개별로 on/off 가능.
  */
-export function runPostProcess(
+export async function runPostProcess(
   imageData: ImageData,
   options: PipelineOptions
-): ImageData {
+): Promise<ImageData> {
   const {
     targetWidth,
     targetHeight,
