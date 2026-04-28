@@ -21,6 +21,7 @@ export default function PaletteSizeSelector() {
       <div className="flex flex-col gap-1">
         <label className="text-xs text-gray-400 font-medium">팔레트 색상 수</label>
         <select
+          data-testid="palette-size-select"
           value={paletteSize}
           onChange={(e) => setPaletteSize(Number(e.target.value))}
           className="px-2 py-1 text-xs bg-gray-700 rounded border border-gray-600 text-white focus:outline-none focus:border-blue-500"
@@ -35,6 +36,7 @@ export default function PaletteSizeSelector() {
 
       <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
         <input
+          data-testid="require-edges-checkbox"
           type="checkbox"
           checked={requireEdges}
           onChange={(e) => setRequireEdges(e.target.checked)}

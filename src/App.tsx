@@ -82,7 +82,7 @@ function App() {
           <BrushSizeSelector />
           <hr className="border-gray-700" />
           <ResolutionSelector />
-          <PaletteSizeSelector />
+          <hr className="border-gray-700" />
           <PostProcessSelector onImageReady={handleImageReady} />
         </Sidebar>
         <MainArea>
@@ -90,6 +90,7 @@ function App() {
         </MainArea>
         <AIPanel>
           <ProviderSelector />
+          <PaletteSizeSelector />
           <hr className="border-gray-700" />
           <PromptPanel
             getCanvasImageData={getCanvasImageData}

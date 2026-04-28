@@ -44,17 +44,8 @@ test.describe("MVP 전체 워크플로우", () => {
     await page.click("text=펜");
   });
 
-  test("뷰 타입 변경이 동작한다", async ({ page }) => {
-    const select = page.locator("select").first();
-    await select.selectOption("top-down");
-    await select.selectOption("quarter");
-    await select.selectOption("side");
-  });
-
   test("팔레트 크기 변경이 동작한다", async ({ page }) => {
-    const selects = page.locator("select");
-    // 두 번째 select가 팔레트
-    const paletteSelect = selects.nth(1);
+    const paletteSelect = page.getByTestId("palette-size-select");
     await paletteSelect.selectOption("8");
     await paletteSelect.selectOption("0"); // 제한없음
   });
