@@ -56,7 +56,7 @@ export async function fetchWithRetry(
       return response;
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
-        throw new Error("요청이 취소되었습니다.");
+        throw new Error("요청이 취소되었습니다.", { cause: err });
       }
       throw err;
     }
