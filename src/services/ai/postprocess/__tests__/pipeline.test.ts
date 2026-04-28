@@ -6,7 +6,7 @@ import * as transparentModule from "../transparentBackground";
 import * as downscaleModule from "../downscale";
 
 describe("runPostProcess", () => {
-  it("범용 모델: 다운스케일이 적용된다", async () => {
+  it("기본 실행: 다운스케일이 적용된다", async () => {
     const src = new ImageData(8, 8);
     // 빨간 픽셀로 채움
     for (let i = 0; i < src.data.length; i += 4) {
@@ -19,7 +19,6 @@ describe("runPostProcess", () => {
     const result = await runPostProcess(src, {
       targetWidth: 4,
       targetHeight: 4,
-      providerType: "openai",
     });
 
     expect(result.width).toBe(4);
@@ -43,7 +42,6 @@ describe("runPostProcess", () => {
       targetWidth: 4,
       targetHeight: 4,
       paletteSize: 4,
-      providerType: "openai",
     });
 
     const colors = new Set<string>();
@@ -106,7 +104,6 @@ describe("runPostProcess", () => {
         targetWidth: 8,
         targetHeight: 8,
         paletteSize: 4,
-        providerType: "openai",
       });
     } finally {
       paletteSpy.mockRestore();
@@ -166,7 +163,6 @@ describe("runPostProcess", () => {
         targetWidth: 8,
         targetHeight: 8,
         paletteSize: 4,
-        providerType: "openai",
         config: {
           downscale: "mode",
           transparentBg: true,
@@ -232,7 +228,6 @@ describe("runPostProcess", () => {
         targetWidth: 8,
         targetHeight: 8,
         paletteSize: 4,
-        providerType: "openai",
         config: {
           downscale: "mode",
           transparentBg: false,
@@ -295,7 +290,6 @@ describe("runPostProcess", () => {
         targetWidth: 8,
         targetHeight: 8,
         paletteSize: 4,
-        providerType: "openai",
         config: {
           downscale: "mode",
           transparentBg: false,
@@ -311,58 +305,6 @@ describe("runPostProcess", () => {
     }
 
     expect(events).toEqual(["boxAverage(->32)", "downscaleMode(->8)"]);
-  });
-
-  // T16: providerType=undefined → Step A~D 모두 스킵, Step E만.
-  it("T16: providerType=undefined — A~D 스킵, E만", async () => {
-    const src = new ImageData(64, 64);
-    for (let i = 0; i < src.data.length; i += 4) {
-      src.data[i + 3] = 255;
-    }
-
-    const events: string[] = [];
-
-    const paletteSpy = vi
-      .spyOn(paletteMapModule, "paletteMap")
-      .mockImplementation((img) => {
-        events.push(`paletteMap(w=${img.width})`);
-        return { result: img, palette: [] as const };
-      });
-    const transparentSpy = vi
-      .spyOn(transparentModule, "makeTransparentBackground")
-      .mockImplementation((img) => {
-        events.push(`transparentBg(w=${img.width})`);
-        return img;
-      });
-    const boxSpy = vi
-      .spyOn(boxAverageModule, "boxAverage")
-      .mockImplementation(async (_img, w, h) => {
-        events.push(`boxAverage(->${w})`);
-        return new ImageData(w, h);
-      });
-    const downscaleSpy = vi
-      .spyOn(downscaleModule, "downscaleMode")
-      .mockImplementation((_img, w, h) => {
-        events.push(`downscaleMode(->${w})`);
-        return new ImageData(w, h);
-      });
-
-    try {
-      await runPostProcess(src, {
-        targetWidth: 8,
-        targetHeight: 8,
-        paletteSize: 4,
-        // providerType 미지정
-      });
-    } finally {
-      paletteSpy.mockRestore();
-      transparentSpy.mockRestore();
-      boxSpy.mockRestore();
-      downscaleSpy.mockRestore();
-    }
-
-    // 특화 모델 분기 — Step E (transparentBg)만 입력 해상도 그대로.
-    expect(events).toEqual(["transparentBg(w=64)"]);
   });
 
   // mid 해상도 동작: src.width <= midW면 boxAverage 호출 안 함 (항등 반환 유사 거동).
@@ -394,7 +336,6 @@ describe("runPostProcess", () => {
         targetWidth: 8,
         targetHeight: 8,
         paletteSize: 4,
-        providerType: "openai",
         config: {
           downscale: "mode",
           transparentBg: false,
@@ -446,7 +387,6 @@ describe("runPostProcess", () => {
         targetWidth: 8,
         targetHeight: 8,
         paletteSize: 4,
-        providerType: "openai",
         config: {
           downscale: "mode",
           transparentBg: false,
@@ -514,7 +454,6 @@ describe("runPostProcess", () => {
         targetWidth: 8,
         targetHeight: 8,
         paletteSize: 4,
-        providerType: "openai",
         config: {
           downscale: "nearest",
           transparentBg: false,
@@ -571,7 +510,6 @@ describe("runPostProcess", () => {
         targetWidth: 8,
         targetHeight: 8,
         paletteSize: 4,
-        providerType: "openai",
         // config 미제공 → DEFAULT_CONFIG 사용
       });
     } finally {

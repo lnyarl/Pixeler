@@ -9,7 +9,6 @@ test.describe("캔버스 에디터 (1단계)", () => {
   test("앱이 로드되고 레이아웃이 표시된다", async ({ page }) => {
     await expect(page.getByTestId("wizard-project-name")).toBeVisible();
     await expect(page.locator("text=도구")).toBeVisible();
-    await expect(page.locator("text=AI 제공자")).toBeVisible();
   });
 
   test("해상도 프리셋 선택이 동작한다", async ({ page }) => {

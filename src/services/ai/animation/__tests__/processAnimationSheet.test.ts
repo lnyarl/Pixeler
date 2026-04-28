@@ -31,7 +31,6 @@ describe("processAnimationSheetToFrames", () => {
       targetWidth: 8,
       targetHeight: 8,
       paletteSize: 4,
-      providerType: "stability",
     });
     expect(frames).toHaveLength(4);
     for (const f of frames) {
@@ -49,7 +48,6 @@ describe("processAnimationSheetToFrames", () => {
       targetWidth: 8,
       targetHeight: 8,
       paletteSize: 4,
-      providerType: "stability",
     });
     expect(frames).toHaveLength(2);
   });
@@ -62,7 +60,6 @@ describe("processAnimationSheetToFrames", () => {
       targetWidth: 8,
       targetHeight: 8,
       paletteSize: 4,
-      providerType: "stability",
     });
     expect(frames).toHaveLength(3);
   });
@@ -75,7 +72,6 @@ describe("processAnimationSheetToFrames", () => {
       targetWidth: 8,
       targetHeight: 8,
       paletteSize: 4,
-      providerType: "stability",
     });
     expect(frames).toHaveLength(8);
   });

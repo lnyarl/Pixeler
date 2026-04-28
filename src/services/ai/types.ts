@@ -56,8 +56,6 @@ export interface GeneratedImage {
   };
 }
 
-export type AIProviderType = "openai" | "stability";
-
 /**
  * v2beta control/structure 호출 옵션 (PR-β — §5.2.6 / M5).
  *
@@ -78,7 +76,6 @@ export interface ControlStructureOptions {
 /** AI 어댑터 인터페이스 — 모든 제공자가 구현 */
 export interface AIAdapter {
   readonly name: string;
-  readonly providerType: AIProviderType;
   readonly capabilities: ProviderCapabilities;
 
   /** 텍스트 프롬프트로 이미지 생성 */

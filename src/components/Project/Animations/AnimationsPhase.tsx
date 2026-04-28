@@ -23,7 +23,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
-import { createAdapter } from "@/services/ai/adapterFactory";
+import { StabilityAdapter } from "@/services/ai/providers/stability";
 import {
   buildAnimationSheetPrompt,
   buildSingleAnimationFramePrompt,
@@ -98,8 +98,7 @@ export default function AnimationsPhase() {
     (s) => s.setLastAnimationDirection
   );
 
-  const selectedProvider = useSettingsStore((s) => s.selectedProvider);
-  const apiKeys = useSettingsStore((s) => s.apiKeys);
+  const apiKey = useSettingsStore((s) => s.apiKey);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const requireEdges = useSettingsStore((s) => s.requireEdges);
   const postProcess = useSettingsStore((s) => s.postProcess);
@@ -215,16 +214,11 @@ export default function AnimationsPhase() {
       setGenError("이 방향에 sprite가 없습니다.");
       return;
     }
-    const apiKey = apiKeys[selectedProvider];
     if (!apiKey) {
       setGenError("API 키를 설정해주세요. (설정 ⚙)");
       return;
     }
-    const adapter = createAdapter(selectedProvider, apiKey);
-    if (!adapter.controlStructure) {
-      setGenError(`${adapter.name}는 시트 생성을 지원하지 않습니다.`);
-      return;
-    }
+    const adapter = new StabilityAdapter(apiKey);
 
     const safeFrameCount = Math.max(
       FRAME_COUNT_MIN,
@@ -256,7 +250,7 @@ export default function AnimationsPhase() {
       finalPrompt,
       referenceImage: inputBase64,
       meta: {
-        provider: selectedProvider,
+        provider: "stability",
         width: meta.width,
         height: meta.height,
         paletteSize,
@@ -265,7 +259,7 @@ export default function AnimationsPhase() {
     });
 
     try {
-      const results = await adapter.controlStructure({
+      const results = await adapter.controlStructure!({
         inputImage: inputBase64,
         prompt: finalPrompt,
         controlStrength: 0.6,
@@ -279,7 +273,6 @@ export default function AnimationsPhase() {
         targetWidth: meta.width,
         targetHeight: meta.height,
         paletteSize,
-        providerType: selectedProvider,
         postProcessConfig: postProcess,
       });
 
@@ -370,7 +363,6 @@ export default function AnimationsPhase() {
         targetWidth: meta.width,
         targetHeight: meta.height,
         paletteSize,
-        providerType: selectedProvider,
         postProcessConfig: postProcess,
       });
 
@@ -412,16 +404,11 @@ export default function AnimationsPhase() {
     if (!meta || !activeDir || !selectedClip) return;
     const ctx = getDirectionContext(activeDir);
     if (!ctx) return;
-    const apiKey = apiKeys[selectedProvider];
     if (!apiKey) {
       setGenError("API 키를 설정해주세요. (설정 ⚙)");
       return;
     }
-    const adapter = createAdapter(selectedProvider, apiKey);
-    if (!adapter.controlStructure) {
-      setGenError(`${adapter.name}는 프레임 재생성을 지원하지 않습니다.`);
-      return;
-    }
+    const adapter = new StabilityAdapter(apiKey);
 
     setGenError(null);
     setBusyFrameIdx(frameIdx);
@@ -452,7 +439,7 @@ export default function AnimationsPhase() {
       finalPrompt,
       referenceImage: inputBase64,
       meta: {
-        provider: selectedProvider,
+        provider: "stability",
         width: meta.width,
         height: meta.height,
         paletteSize,
@@ -461,7 +448,7 @@ export default function AnimationsPhase() {
     });
 
     try {
-      const results = await adapter.controlStructure({
+      const results = await adapter.controlStructure!({
         inputImage: inputBase64,
         prompt: finalPrompt,
         controlStrength: 0.6,
@@ -473,7 +460,6 @@ export default function AnimationsPhase() {
         targetWidth: meta.width,
         targetHeight: meta.height,
         paletteSize,
-        providerType: selectedProvider,
         config: postProcess,
       });
       const palette = extractPaletteFromImageData(processed, paletteSize);
@@ -548,7 +534,6 @@ export default function AnimationsPhase() {
         targetWidth: meta.width,
         targetHeight: meta.height,
         paletteSize,
-        providerType: selectedProvider,
         config: postProcess,
       });
       const palette = extractPaletteFromImageData(processed, paletteSize);

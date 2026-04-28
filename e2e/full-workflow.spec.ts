@@ -9,7 +9,6 @@ test.describe("MVP 전체 워크플로우", () => {
   test("앱 로드 시 모든 주요 UI 요소가 표시된다", async ({ page }) => {
     await expect(page.getByTestId("wizard-project-name")).toBeVisible();
     await expect(page.locator("text=도구")).toBeVisible();
-    await expect(page.locator("text=AI 제공자")).toBeVisible();
     await expect(page.locator("text=프롬프트")).toBeVisible();
     await expect(page.locator("text=히스토리")).toBeVisible();
     await expect(page.locator("text=PNG 내보내기")).toBeVisible();

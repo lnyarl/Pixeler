@@ -12,7 +12,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
-import { createAdapter } from "@/services/ai/adapterFactory";
+import { StabilityAdapter } from "@/services/ai/providers/stability";
 import { buildSingleDirectionPrompt } from "@/services/ai/promptBuilder/direction";
 import { buildDevSingleDirectionSheet } from "@/services/ai/spriteSheet/devDummySheet";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
@@ -34,8 +34,7 @@ export default function DirectionsPhase() {
   const historyItems = useHistoryStore((s) => s.items);
   const historyActive = useHistoryStore((s) => s.activeItemId);
 
-  const selectedProvider = useSettingsStore((s) => s.selectedProvider);
-  const apiKeys = useSettingsStore((s) => s.apiKeys);
+  const apiKey = useSettingsStore((s) => s.apiKey);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const requireEdges = useSettingsStore((s) => s.requireEdges);
   const postProcess = useSettingsStore((s) => s.postProcess);
@@ -96,16 +95,11 @@ export default function DirectionsPhase() {
       setCellError("베이스 sprite를 먼저 만드세요.");
       return;
     }
-    const apiKey = apiKeys[selectedProvider];
     if (!apiKey) {
       setCellError("API 키를 설정해주세요. (설정 ⚙)");
       return;
     }
-    const adapter = createAdapter(selectedProvider, apiKey);
-    if (!adapter.controlStructure) {
-      setCellError(`${adapter.name}는 셀 재생성을 지원하지 않습니다.`);
-      return;
-    }
+    const adapter = new StabilityAdapter(apiKey);
 
     setCellError(null);
     setBusyDirection(dir);
@@ -129,7 +123,7 @@ export default function DirectionsPhase() {
       finalPrompt,
       referenceImage: inputBase64,
       meta: {
-        provider: selectedProvider,
+        provider: "stability",
         width: meta.width,
         height: meta.height,
         paletteSize,
@@ -149,7 +143,6 @@ export default function DirectionsPhase() {
         targetWidth: meta.width,
         targetHeight: meta.height,
         paletteSize,
-        providerType: selectedProvider,
         config: postProcess,
       });
       const palette = extractPaletteFromImageData(processed, paletteSize);
@@ -212,7 +205,6 @@ export default function DirectionsPhase() {
         targetWidth: meta.width,
         targetHeight: meta.height,
         paletteSize,
-        providerType: selectedProvider,
         config: postProcess,
       });
       const palette = extractPaletteFromImageData(processed, paletteSize);

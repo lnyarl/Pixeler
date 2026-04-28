@@ -12,7 +12,7 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
 import { useHistoryStore } from "@/stores/historyStore";
-import { createAdapter } from "@/services/ai/adapterFactory";
+import { StabilityAdapter } from "@/services/ai/providers/stability";
 import { buildDirectionSheetPrompt } from "@/services/ai/promptBuilder/direction";
 import { processSheetToDirections } from "@/services/ai/spriteSheet/processSheet";
 import { buildDevDirectionSheet } from "@/services/ai/spriteSheet/devDummySheet";
@@ -40,8 +40,7 @@ export default function SheetGenerationPanel({
   const historyItems = useHistoryStore((s) => s.items);
   const historyActive = useHistoryStore((s) => s.activeItemId);
 
-  const selectedProvider = useSettingsStore((s) => s.selectedProvider);
-  const apiKeys = useSettingsStore((s) => s.apiKeys);
+  const apiKey = useSettingsStore((s) => s.apiKey);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const requireEdges = useSettingsStore((s) => s.requireEdges);
   const postProcess = useSettingsStore((s) => s.postProcess);
@@ -86,21 +85,11 @@ export default function SheetGenerationPanel({
       setError("베이스 sprite를 먼저 만드세요.");
       return;
     }
-    const apiKey = apiKeys[selectedProvider];
     if (!apiKey) {
       setError("API 키를 설정해주세요. (설정 ⚙)");
       return;
     }
-    const adapter = createAdapter(selectedProvider, apiKey);
-    if (
-      !adapter.controlStructure ||
-      !adapter.capabilities.supportsControlStructure
-    ) {
-      setError(
-        `${adapter.name}는 시트 생성을 지원하지 않습니다 (Stability AI 사용).`
-      );
-      return;
-    }
+    const adapter = new StabilityAdapter(apiKey);
 
     setError(null);
     setBusy(true);
@@ -124,7 +113,7 @@ export default function SheetGenerationPanel({
       finalPrompt,
       referenceImage: inputBase64,
       meta: {
-        provider: selectedProvider,
+        provider: "stability",
         width: meta.width,
         height: meta.height,
         paletteSize,
@@ -132,7 +121,7 @@ export default function SheetGenerationPanel({
     });
 
     try {
-      const results = await adapter.controlStructure({
+      const results = await adapter.controlStructure!({
         inputImage: inputBase64,
         prompt: finalPrompt,
         controlStrength: 0.7,
@@ -147,7 +136,6 @@ export default function SheetGenerationPanel({
         targetWidth: meta.width,
         targetHeight: meta.height,
         paletteSize,
-        providerType: selectedProvider,
         postProcessConfig: postProcess,
       });
       cells.forEach(({ direction, sprite }) => {
@@ -214,7 +202,6 @@ export default function SheetGenerationPanel({
         targetWidth: meta.width,
         targetHeight: meta.height,
         paletteSize,
-        providerType: selectedProvider,
         postProcessConfig: postProcess,
       });
       cells.forEach(({ direction, sprite }) => {

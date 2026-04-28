@@ -20,7 +20,6 @@ const API_BASE = import.meta.env.DEV
 
 export class StabilityAdapter implements AIAdapter {
   readonly name = "Stability AI";
-  readonly providerType = "stability" as const;
   readonly capabilities: ProviderCapabilities = {
     supportsMultipleOutputs: false,
     supportsImageReference: true,

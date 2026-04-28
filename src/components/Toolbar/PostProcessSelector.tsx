@@ -11,7 +11,6 @@ export default function PostProcessSelector() {
   const config = useSettingsStore((s) => s.postProcess);
   const setConfig = useSettingsStore((s) => s.setPostProcess);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
-  const provider = useSettingsStore((s) => s.selectedProvider);
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
   const activeItemId = useHistoryStore((s) => s.activeItemId);
@@ -28,7 +27,6 @@ export default function PostProcessSelector() {
     const result: ImageData = await runPostProcess(raw, {
       targetWidth: width,
       targetHeight: height,
-      providerType: provider,
       paletteSize,
       config,
     });

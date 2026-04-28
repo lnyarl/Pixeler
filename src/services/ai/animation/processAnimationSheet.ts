@@ -8,7 +8,6 @@
  * 즉 첫 N개는 사용자가 의도한 시간 순서.
  */
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
-import type { AIProviderType } from "@/services/ai/types";
 import type { PostProcessConfig } from "@/stores/settingsStore";
 import { extractPaletteFromImageData } from "@/utils/extractPalette";
 import type { AnimationFrame } from "@/services/persistence/types";
@@ -22,7 +21,6 @@ export interface ProcessAnimationSheetOptions {
   targetWidth: number;
   targetHeight: number;
   paletteSize: number;
-  providerType: AIProviderType;
   postProcessConfig?: PostProcessConfig;
 }
 
@@ -53,7 +51,6 @@ export async function processAnimationSheetToFrames(
       targetWidth: opts.targetWidth,
       targetHeight: opts.targetHeight,
       paletteSize: opts.paletteSize,
-      providerType: opts.providerType,
       config: opts.postProcessConfig,
     });
     const palette = extractPaletteFromImageData(processed, opts.paletteSize);

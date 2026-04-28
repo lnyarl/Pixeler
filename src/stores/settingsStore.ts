@@ -1,10 +1,4 @@
 import { create } from "zustand";
-import type { AIProviderType } from "@/services/ai/types";
-
-interface ApiKeys {
-  openai: string;
-  stability: string;
-}
 
 export type DownscaleAlgorithm = "mode" | "nearest";
 
@@ -22,8 +16,8 @@ export interface PostProcessConfig {
 }
 
 export interface SettingsState {
-  apiKeys: ApiKeys;
-  selectedProvider: AIProviderType;
+  /** Stability AI API 키 (단일 provider 운영). */
+  apiKey: string;
   paletteSize: number;
   postProcess: PostProcessConfig;
   /**
@@ -31,9 +25,8 @@ export interface SettingsState {
    * buildStyleLine이 이 값을 받아 외곽선 텍스트를 append (default: false → 기존 동작 동일).
    */
   requireEdges: boolean;
-  setApiKey: (provider: AIProviderType, key: string) => void;
-  removeApiKey: (provider: AIProviderType) => void;
-  setSelectedProvider: (provider: AIProviderType) => void;
+  setApiKey: (key: string) => void;
+  removeApiKey: () => void;
   setPaletteSize: (size: number) => void;
   setPostProcess: (patch: Partial<PostProcessConfig>) => void;
   setRequireEdges: (v: boolean) => void;
@@ -41,23 +34,34 @@ export interface SettingsState {
 
 const STORAGE_KEY = "pixeler_api_keys";
 
-function loadApiKeys(): ApiKeys {
+/**
+ * 마이그레이션:
+ *   기존 스키마 { openai: string, stability: string } → stability 키만 사용.
+ *   openai 필드는 무시. 새 단일 키 스키마 { apiKey: string }로도 호환.
+ */
+function loadApiKey(): string {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+    if (!stored) return "";
+    const parsed: unknown = JSON.parse(stored);
+    if (typeof parsed === "object" && parsed !== null) {
+      const obj = parsed as Record<string, unknown>;
+      if (typeof obj.apiKey === "string") return obj.apiKey;
+      if (typeof obj.stability === "string") return obj.stability;
+    }
   } catch {
     // 파싱 실패 시 기본값
   }
-  return { openai: "", stability: "" };
+  return "";
 }
 
-function saveApiKeys(keys: ApiKeys) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(keys));
+function saveApiKey(key: string) {
+  // 단일 키 스키마로 저장. 기존 openai/stability 필드는 덮어쓰며 자연 마이그레이션.
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ apiKey: key }));
 }
 
-export const useSettingsStore = create<SettingsState>((set, get) => ({
-  apiKeys: loadApiKeys(),
-  selectedProvider: "openai",
+export const useSettingsStore = create<SettingsState>((set) => ({
+  apiKey: loadApiKey(),
   paletteSize: 16,
   postProcess: {
     downscale: "mode",
@@ -67,19 +71,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   requireEdges: false,
 
-  setApiKey: (provider, key) => {
-    const updated = { ...get().apiKeys, [provider]: key };
-    saveApiKeys(updated);
-    set({ apiKeys: updated });
+  setApiKey: (key) => {
+    saveApiKey(key);
+    set({ apiKey: key });
   },
 
-  removeApiKey: (provider) => {
-    const updated = { ...get().apiKeys, [provider]: "" };
-    saveApiKeys(updated);
-    set({ apiKeys: updated });
+  removeApiKey: () => {
+    saveApiKey("");
+    set({ apiKey: "" });
   },
 
-  setSelectedProvider: (provider) => set({ selectedProvider: provider }),
   setPaletteSize: (size) => {
     if (size === 0 || (size >= 4 && size <= 64)) set({ paletteSize: size });
   },

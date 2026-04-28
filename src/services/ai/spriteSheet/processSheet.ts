@@ -7,7 +7,6 @@
  * 셀별 sourceCellRect는 분할 시 grid 위치로부터 계산.
  */
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
-import type { AIProviderType } from "@/services/ai/types";
 import type { PostProcessConfig } from "@/stores/settingsStore";
 import { extractPaletteFromImageData } from "@/utils/extractPalette";
 import type { DirectionSprite } from "@/services/persistence/types";
@@ -22,7 +21,6 @@ export interface ProcessSheetOptions {
   targetWidth: number;
   targetHeight: number;
   paletteSize: number;
-  providerType: AIProviderType;
   postProcessConfig?: PostProcessConfig;
 }
 
@@ -71,7 +69,6 @@ export async function processSheetToDirections(
       targetWidth: opts.targetWidth,
       targetHeight: opts.targetHeight,
       paletteSize: opts.paletteSize,
-      providerType: opts.providerType,
       config: opts.postProcessConfig,
     });
     const palette = extractPaletteFromImageData(processed, opts.paletteSize);

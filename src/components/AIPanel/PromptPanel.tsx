@@ -5,7 +5,7 @@ import { useCanvasStore } from "@/stores/canvasStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
 import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
-import { createAdapter } from "@/services/ai/adapterFactory";
+import { StabilityAdapter } from "@/services/ai/providers/stability";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import {
   buildGeneratePrompt,
@@ -53,8 +53,7 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
   const setError = useGenerationStore((s) => s.setError);
   const cancel = useGenerationStore((s) => s.cancel);
 
-  const selectedProvider = useSettingsStore((s) => s.selectedProvider);
-  const apiKeys = useSettingsStore((s) => s.apiKeys);
+  const apiKey = useSettingsStore((s) => s.apiKey);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const requireEdges = useSettingsStore((s) => s.requireEdges);
   const postProcess = useSettingsStore((s) => s.postProcess);
@@ -87,7 +86,6 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
       return;
     }
 
-    const apiKey = apiKeys[selectedProvider];
     if (!apiKey) {
       setError("API 키를 설정해주세요. (설정 버튼 ⚙)");
       return;
@@ -97,7 +95,7 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
     const startTime = Date.now();
 
     try {
-      const adapter = createAdapter(selectedProvider, apiKey);
+      const adapter = new StabilityAdapter(apiKey);
       let results: GeneratedImage[];
 
       if (hasMask && hasCanvasContent && adapter.regenerateWithFeedback) {
@@ -124,7 +122,7 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
           referenceImage: referenceBase64,
           maskImage: maskBase64,
           meta: {
-            provider: selectedProvider,
+            provider: "stability",
             width,
             height,
             paletteSize,
@@ -177,7 +175,7 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
           finalPrompt,
           referenceImage: referenceBase64,
           meta: {
-            provider: selectedProvider,
+            provider: "stability",
             width,
             height,
             paletteSize,
@@ -224,7 +222,7 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
           userPrompt: prompt,
           finalPrompt,
           meta: {
-            provider: selectedProvider,
+            provider: "stability",
             width,
             height,
             paletteSize,
@@ -280,7 +278,6 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
         const imageData: ImageData = await runPostProcess(rawImageData, {
           targetWidth: width,
           targetHeight: height,
-          providerType: selectedProvider,
           paletteSize,
           config: postProcess,
         });
@@ -391,7 +388,7 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
   }
 
   const buttonLabel = hasMask ? "부분 수정" : hasCanvasContent ? "수정 생성" : "생성";
-  const currentApiKey = apiKeys[selectedProvider];
+  const currentApiKey = apiKey;
 
   return (
     <div className="flex flex-col gap-2">
