@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import Header from "./components/Layout/Header";
 import Sidebar from "./components/Layout/Sidebar";
 import MainArea from "./components/Layout/MainArea";
@@ -10,7 +10,6 @@ import BrushSizeSelector from "./components/Toolbar/BrushSizeSelector";
 import PaletteSizeSelector from "./components/Toolbar/PaletteSizeSelector";
 import PostProcessSelector from "./components/Toolbar/PostProcessSelector";
 import PixelCanvas from "./components/Canvas/PixelCanvas";
-import type { PixelCanvasHandle } from "./components/Canvas/PixelCanvas";
 import ApiKeySettings from "./components/Settings/ApiKeySettings";
 import ProviderSelector from "./components/Settings/ProviderSelector";
 import PromptPanel from "./components/AIPanel/PromptPanel";
@@ -27,26 +26,11 @@ import { useBeforeUnload } from "./hooks/useBeforeUnload";
 
 function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [canvasHandle, setCanvasHandle] = useState<PixelCanvasHandle | null>(
-    null
-  );
   const [processedDrafts, setProcessedDrafts] = useState<ProcessedDraft[]>([]);
   const isGenerating = useGenerationStore((s) => s.status === "loading");
   const breakpoint = useResponsive();
   useBeforeUnload();
   const isMobile = breakpoint === "mobile";
-
-  const handleImageReady = useCallback(
-    (imageData: ImageData) => {
-      canvasHandle?.loadImageData(imageData);
-    },
-    [canvasHandle]
-  );
-
-  const getCanvasImageData = useCallback(
-    () => canvasHandle?.getImageData() ?? null,
-    [canvasHandle]
-  );
 
   if (isMobile) {
     return (
@@ -54,16 +38,12 @@ function App() {
         <Header onSettingsClick={() => setSettingsOpen(true)} />
         <div className="flex-1 flex flex-col overflow-auto p-3 gap-3">
           <ProviderSelector />
-          <PromptPanel
-            getCanvasImageData={getCanvasImageData}
-            onImageReady={handleImageReady}
-            onDraftsReady={setProcessedDrafts}
-          />
+          <PromptPanel onDraftsReady={setProcessedDrafts} />
           <ErrorDisplay />
-          <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
-          <ExportButton getCanvasImageData={getCanvasImageData} />
+          <DraftGrid drafts={processedDrafts} />
+          <ExportButton />
           <hr className="border-gray-700" />
-          <HistoryPanel onRestore={handleImageReady} />
+          <HistoryPanel />
         </div>
         {settingsOpen && (
           <ApiKeySettings onClose={() => setSettingsOpen(false)} />
@@ -83,26 +63,22 @@ function App() {
           <hr className="border-gray-700" />
           <ResolutionSelector />
           <hr className="border-gray-700" />
-          <PostProcessSelector onImageReady={handleImageReady} />
+          <PostProcessSelector />
         </Sidebar>
         <MainArea>
-          <PixelCanvas onReady={setCanvasHandle} disabled={isGenerating} />
+          <PixelCanvas disabled={isGenerating} />
         </MainArea>
         <AIPanel>
           <ProviderSelector />
           <PaletteSizeSelector />
           <hr className="border-gray-700" />
-          <PromptPanel
-            getCanvasImageData={getCanvasImageData}
-            onImageReady={handleImageReady}
-            onDraftsReady={setProcessedDrafts}
-          />
+          <PromptPanel onDraftsReady={setProcessedDrafts} />
           <ErrorDisplay />
-          <DraftGrid drafts={processedDrafts} onSelect={handleImageReady} />
+          <DraftGrid drafts={processedDrafts} />
           <DevRawPreview />
-          <ExportButton getCanvasImageData={getCanvasImageData} />
+          <ExportButton />
           <hr className="border-gray-700" />
-          <HistoryPanel onRestore={handleImageReady} />
+          <HistoryPanel />
         </AIPanel>
       </div>
       {settingsOpen && (

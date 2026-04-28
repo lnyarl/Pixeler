@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
+import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
 import { createAdapter } from "@/services/ai/adapterFactory";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import {
@@ -36,16 +37,12 @@ export interface ProcessedDraft {
 }
 
 interface PromptPanelProps {
-  getCanvasImageData: () => ImageData | null;
-  onImageReady: (imageData: ImageData) => void;
   onDraftsReady?: (drafts: ProcessedDraft[]) => void;
 }
 
-export default function PromptPanel({
-  getCanvasImageData,
-  onImageReady,
-  onDraftsReady,
-}: PromptPanelProps) {
+export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
+  const getImageData = useCanvasHandleStore((s) => s.getImageData);
+  const loadImageData = useCanvasHandleStore((s) => s.loadImageData);
   const status = useGenerationStore((s) => s.status);
   const prompt = useGenerationStore((s) => s.prompt);
   const count = useGenerationStore((s) => s.count);
@@ -68,7 +65,7 @@ export default function PromptPanel({
 
   const maskData = useCanvasStore((s) => s.maskData);
   const clearMask = useCanvasStore((s) => s.clearMask);
-  const canvasData = getCanvasImageData();
+  const canvasData = getImageData();
   const hasCanvasContent = canvasData !== null && hasVisiblePixels(canvasData);
   const hasMask = maskData !== null;
 
@@ -298,7 +295,7 @@ export default function PromptPanel({
     }
 
     if (processedImages.length === 1) {
-      onImageReady(processedImages[0].imageData);
+      loadImageData(processedImages[0].imageData);
     }
 
     const historyPromptLabel =
@@ -344,7 +341,7 @@ export default function PromptPanel({
     }
 
     const currentActiveId = useHistoryStore.getState().activeItemId;
-    const canvasData2 = getCanvasImageData();
+    const canvasData2 = getImageData();
     const hasContent = canvasData2 !== null && hasVisiblePixels(canvasData2);
     const parentId = hasContent ? currentActiveId : null;
     const thumbnail = imageDataToBase64(imgData);
@@ -363,7 +360,7 @@ export default function PromptPanel({
       },
     });
 
-    onImageReady(imgData);
+    loadImageData(imgData);
 
     const historyId = addHistoryItem({
       prompt: prompt || "[DEV] 더미 이미지",

@@ -1,20 +1,18 @@
 import { useHistoryStore, type HistoryItem } from "@/stores/historyStore";
+import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
 import HistoryGraph from "./HistoryGraph";
 
-interface HistoryPanelProps {
-  onRestore: (imageData: ImageData) => void;
-}
-
-export default function HistoryPanel({ onRestore }: HistoryPanelProps) {
+export default function HistoryPanel() {
   const items = useHistoryStore((s) => s.items);
   const activeItemId = useHistoryStore((s) => s.activeItemId);
   const removeItem = useHistoryStore((s) => s.removeItem);
   const setActiveItemId = useHistoryStore((s) => s.setActiveItemId);
   const clearAll = useHistoryStore((s) => s.clear);
+  const loadImageData = useCanvasHandleStore((s) => s.loadImageData);
   function handleSelect(item: HistoryItem) {
     if (item.id === activeItemId) return;
     // undo 스택에 현재 상태가 저장되므로 확인 다이얼로그 불필요
-    onRestore(item.imageData);
+    loadImageData(item.imageData);
     setActiveItemId(item.id);
   }
 

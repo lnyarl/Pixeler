@@ -2,17 +2,12 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
+import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
 import type { DownscaleAlgorithm } from "@/stores/settingsStore";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import { base64ToImageData, imageDataToBase64 } from "@/utils/imageConvert";
 
-interface PostProcessSelectorProps {
-  onImageReady: (data: ImageData) => void;
-}
-
-export default function PostProcessSelector({
-  onImageReady,
-}: PostProcessSelectorProps) {
+export default function PostProcessSelector() {
   const config = useSettingsStore((s) => s.postProcess);
   const setConfig = useSettingsStore((s) => s.setPostProcess);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
@@ -21,6 +16,7 @@ export default function PostProcessSelector({
   const height = useCanvasStore((s) => s.height);
   const activeItemId = useHistoryStore((s) => s.activeItemId);
   const items = useHistoryStore((s) => s.items);
+  const loadImageData = useCanvasHandleStore((s) => s.loadImageData);
 
   const activeItem = items.find((i) => i.id === activeItemId);
   const canReapply = Boolean(activeItem?.rawBase64);
@@ -36,7 +32,7 @@ export default function PostProcessSelector({
       paletteSize,
       config,
     });
-    onImageReady(result);
+    loadImageData(result);
 
     // 같은 rawBase64를 가진 가장 최근 디버그 로그 엔트리의 processedOutput 갱신
     const debug = useDebugLogStore.getState();

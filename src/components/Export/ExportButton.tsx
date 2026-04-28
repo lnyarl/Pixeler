@@ -1,12 +1,11 @@
 import { downloadPng, hasContent } from "@/utils/exportPng";
+import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
 
-interface ExportButtonProps {
-  getCanvasImageData: () => ImageData | null;
-}
+export default function ExportButton() {
+  const getImageData = useCanvasHandleStore((s) => s.getImageData);
 
-export default function ExportButton({ getCanvasImageData }: ExportButtonProps) {
   function handleExport() {
-    const imageData = getCanvasImageData();
+    const imageData = getImageData();
     if (!imageData) {
       alert("캔버스에 이미지가 없습니다.");
       return;

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
 import { UndoRedoManager } from "@/utils/undoRedoManager";
 import { useDrawTool } from "./tools/useDrawTool";
 import GridOverlay from "./GridOverlay";
@@ -18,11 +19,10 @@ export interface PixelCanvasHandle {
 }
 
 interface PixelCanvasProps {
-  onReady?: (handle: PixelCanvasHandle) => void;
   disabled?: boolean;
 }
 
-export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
+export default function PixelCanvas({ disabled }: PixelCanvasProps) {
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
 
@@ -146,10 +146,12 @@ export default function PixelCanvas({ onReady, disabled }: PixelCanvasProps) {
       : null;
   }, []);
 
-  // onReady 콜백으로 handle 전달
+  // store에 handle 등록 (mount 시 set, unmount 시 null로 정리 — W1 위험 완화)
   useEffect(() => {
-    onReady?.({ loadImageData, getImageData });
-  }, [onReady, loadImageData, getImageData]);
+    const setHandle = useCanvasHandleStore.getState().setHandle;
+    setHandle({ loadImageData, getImageData });
+    return () => setHandle(null);
+  }, [loadImageData, getImageData]);
 
   // undo / redo (ImageData + activeItemId 함께 복원)
   const handleUndo = useCallback(() => {

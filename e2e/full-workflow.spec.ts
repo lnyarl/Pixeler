@@ -49,4 +49,68 @@ test.describe("MVP 전체 워크플로우", () => {
     await paletteSelect.selectOption("8");
     await paletteSelect.selectOption("0"); // 제한없음
   });
+
+  // === canvasHandle store화 회귀 검증 (시나리오 3·4·5) ===
+  // 기획서 §7.3 / N4-b — store.loadImageData / store.getImageData 경로가
+  // 실제 DOM 인터랙션으로 동작하는지 확인.
+
+  test("DEV 더미 생성 → 캔버스 적용 + 히스토리 +1 (store.loadImageData 경로)", async ({
+    page,
+  }) => {
+    // DEV 버튼은 import.meta.env.DEV에서만 노출. playwright는 dev 서버에서 실행됨.
+    const devButton = page.locator("button:has-text('DEV')");
+    await expect(devButton).toBeVisible();
+
+    await devButton.click();
+
+    // 히스토리 패널에 항목 1개 표시 (라벨 "히스토리 (1)")
+    await expect(page.locator("text=히스토리 (1)")).toBeVisible();
+    // Undo 활성화 — store.loadImageData가 PixelCanvas의 imageDataRef를 갱신했음을 의미
+    await expect(page.locator("button:has-text('Undo')")).toBeEnabled();
+  });
+
+  test("히스토리 항목 클릭 → 캔버스 복원 (store.loadImageData 경로)", async ({
+    page,
+  }) => {
+    // 1차 더미 생성
+    await page.locator("button:has-text('DEV')").click();
+    await expect(page.locator("text=히스토리 (1)")).toBeVisible();
+
+    // 2차 더미 생성 (다른 항목으로 활성 노드 이동)
+    await page.locator("button:has-text('DEV')").click();
+    await expect(page.locator("text=히스토리 (2)")).toBeVisible();
+
+    // 활성 항목은 최신(L0). 그 외 첫 번째 비활성 행을 클릭하여 복원 트리거.
+    // HistoryGraph 행 = `<div ... onClick> + <img alt="">` 구조.
+    // 비활성 행은 hover 클래스를 가진 transparent border-left.
+    const inactiveRow = page
+      .locator(
+        "div.cursor-pointer:has(img):not(.bg-blue-900\\/40)"
+      )
+      .first();
+    await expect(inactiveRow).toBeVisible();
+    await inactiveRow.click();
+
+    // 복원 후 캔버스가 정상 (회귀 없음 확인) + 활성 표시(blue-900) 행이 다시 존재
+    await expect(page.locator("canvas").first()).toBeVisible();
+    await expect(
+      page.locator("div.bg-blue-900\\/40:has(img)").first()
+    ).toBeVisible();
+  });
+
+  test("PNG 내보내기 → 다운로드 트리거 (store.getImageData 경로)", async ({
+    page,
+  }) => {
+    // 더미 생성으로 캔버스에 컨텐츠 채움
+    await page.locator("button:has-text('DEV')").click();
+    await expect(page.locator("text=히스토리 (1)")).toBeVisible();
+
+    // 다운로드 트리거 — store.getImageData → downloadPng
+    const downloadPromise = page.waitForEvent("download", { timeout: 5000 });
+    await page.locator("button:has-text('PNG 내보내기')").click();
+    const download = await downloadPromise;
+
+    // 파일명이 .png 확장자인지 확인 (기능 작동 자체 검증)
+    expect(download.suggestedFilename()).toMatch(/\.png$/i);
+  });
 });

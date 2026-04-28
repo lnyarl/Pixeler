@@ -1,18 +1,21 @@
 import type { ProcessedDraft } from "./PromptPanel";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
 
 interface DraftGridProps {
   drafts: ProcessedDraft[];
-  onSelect: (imageData: ImageData) => void;
 }
 
-export default function DraftGrid({ drafts, onSelect }: DraftGridProps) {
+export default function DraftGrid({ drafts }: DraftGridProps) {
   const setActiveItemId = useHistoryStore((s) => s.setActiveItemId);
+  const loadImageData = useCanvasHandleStore((s) => s.loadImageData);
 
   if (!drafts || drafts.length <= 1) return null;
 
   function handleSelect(draft: ProcessedDraft) {
-    onSelect(draft.imageData);
+    // (1) 캔버스에 적용 — 기존 onSelect 콜백 대체
+    loadImageData(draft.imageData);
+    // (2) 활성 히스토리 갱신 — 기존 그대로 유지 (Major-1)
     setActiveItemId(draft.historyId);
   }
 
