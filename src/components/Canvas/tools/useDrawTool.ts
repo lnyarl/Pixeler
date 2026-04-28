@@ -166,6 +166,7 @@ export function useDrawTool({
         const shifted = shiftImageData(baseImage, dx, dy);
         imgData.data.set(shifted.data);
         onRender();
+        onStateChange();
         useProjectStore.getState().markDirty();
         return;
       }
@@ -185,8 +186,10 @@ export function useDrawTool({
 
       lastPixelRef.current = pixel;
       onRender();
+      onStateChange();
+      useProjectStore.getState().markDirty();
     },
-    [imageDataRef, getPixel, getPixelUnbounded, brushSize, getRgba, onRender, currentTool]
+    [imageDataRef, getPixel, getPixelUnbounded, brushSize, getRgba, onRender, onStateChange, currentTool]
   );
 
   const handleMouseUp = useCallback(() => {
