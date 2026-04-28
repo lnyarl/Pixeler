@@ -1,44 +1,35 @@
 /**
- * DirectionsPhaseRoute — placeholder ("준비 중", PR-β에서 활성화).
+ * DirectionsPhaseRoute — 방향 페이즈 진입점.
  *
- * 게이트: `projectStore.basePhase.activeSpriteId`가 null이면 베이스로 redirect.
+ * - 게이트: `projectStore.basePhase.activeSpriteId`가 null이면 베이스로 redirect.
+ * - 게이트 통과 시 DirectionsPhase 컴포넌트 렌더 (PR-β 본 구현).
  */
-
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import DirectionsPhase from "./Directions/DirectionsPhase";
 
 export default function DirectionsPhaseRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
   const basePhase = useProjectStore((s) => s.basePhase);
   const setLastPhase = useProjectStore((s) => s.setLastPhase);
+  const historyActiveId = useHistoryStore((s) => s.activeItemId);
+
+  // 게이트: 활성 베이스가 history(현재 작업 중) 또는 projectStore에 있어야 함.
+  const hasBase =
+    historyActiveId !== null || basePhase.activeSpriteId !== null;
 
   useEffect(() => {
-    if (basePhase.activeSpriteId === null) {
-      // 게이트 미충족 — 베이스로 redirect.
+    if (!hasBase) {
       navigate(`/project/${id}/base`, { replace: true });
       return;
     }
     setLastPhase("directions");
-  }, [basePhase.activeSpriteId, id, navigate, setLastPhase]);
+  }, [hasBase, id, navigate, setLastPhase]);
 
-  if (basePhase.activeSpriteId === null) return null;
+  if (!hasBase) return null;
 
-  return (
-    <div className="flex flex-col h-full items-center justify-center text-center p-8">
-      <h2 className="text-2xl font-semibold text-white mb-2">방향 페이즈</h2>
-      <p className="text-gray-400 mb-6 max-w-md">
-        준비 중입니다. PR-β에서 4/8방향 시트 생성 + 셀별 재생성 기능이
-        활성화됩니다.
-      </p>
-      <button
-        onClick={() => navigate(`/project/${id}/base`)}
-        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 text-sm"
-        data-testid="directions-back-base"
-      >
-        ← 베이스 페이즈
-      </button>
-    </div>
-  );
+  return <DirectionsPhase />;
 }

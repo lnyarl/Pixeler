@@ -53,7 +53,7 @@ test.describe("프로젝트 인프라 흐름 (PR-α)", () => {
     await expect(nextBtn).toBeEnabled();
   });
 
-  test("[α-F11] 다음 페이즈 클릭 시 directions placeholder 진입", async ({
+  test("[α-F11] 다음 페이즈 클릭 시 directions 진입", async ({
     page,
   }) => {
     await createTestProjectAndEnter(page);
@@ -61,7 +61,8 @@ test.describe("프로젝트 인프라 흐름 (PR-α)", () => {
     await expect(page.locator("text=히스토리 (1)")).toBeVisible();
     await page.getByTestId("base-next-phase").first().click();
     await page.waitForURL(/\/project\/[^/]+\/directions/);
-    await expect(page.locator("text=준비 중")).toBeVisible();
+    // PR-β: placeholder 대신 실제 DirectionsPhase가 렌더 — direction-grid 보임.
+    await expect(page.getByTestId("direction-grid")).toBeVisible();
     // 베이스로 돌아가기.
     await page.getByTestId("directions-back-base").click();
     await page.waitForURL(/\/project\/[^/]+\/base/);
