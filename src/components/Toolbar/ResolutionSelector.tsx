@@ -4,12 +4,14 @@ import {
   RESOLUTION_PRESETS,
   isValidResolution,
 } from "@/stores/canvasStore";
+import { useProjectStore } from "@/stores/projectStore";
+import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
 
 export default function ResolutionSelector() {
   const width = useCanvasStore((s) => s.width);
   const height = useCanvasStore((s) => s.height);
   const linked = useCanvasStore((s) => s.linked);
-  const dirty = useCanvasStore((s) => s.dirty);
+  const projectDirty = useProjectStore((s) => s.dirty);
   const setResolution = useCanvasStore((s) => s.setResolution);
   const setLinked = useCanvasStore((s) => s.setLinked);
 
@@ -17,8 +19,18 @@ export default function ResolutionSelector() {
   const [customH, setCustomH] = useState("");
   const [error, setError] = useState("");
 
+  function hasCanvasContent(): boolean {
+    const img = useCanvasHandleStore.getState().getImageData();
+    if (!img) return false;
+    for (let i = 3; i < img.data.length; i += 4) {
+      if (img.data[i] > 0) return true;
+    }
+    return false;
+  }
+
   function confirmChange(newW: number, newH: number) {
-    if (dirty) {
+    // dirty 또는 캔버스에 보이는 픽셀이 있을 때 confirm.
+    if (projectDirty || hasCanvasContent()) {
       const shrinking = newW < width || newH < height;
       const msg = shrinking
         ? `해상도를 ${newW}×${newH}로 줄이면 왼쪽 위를 기준으로 잘립니다. 변경하시겠습니까?`

@@ -1,12 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { createTestProjectAndEnter } from "./_helpers/createTestProject";
 
 test.describe("캔버스 에디터 (1단계)", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await createTestProjectAndEnter(page);
   });
 
   test("앱이 로드되고 레이아웃이 표시된다", async ({ page }) => {
-    await expect(page.locator("text=Pixeler")).toBeVisible();
+    await expect(page.getByTestId("wizard-project-name")).toBeVisible();
     await expect(page.locator("text=도구")).toBeVisible();
     await expect(page.locator("text=AI 제공자")).toBeVisible();
   });

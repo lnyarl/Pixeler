@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom/vitest";
+import "fake-indexeddb/auto";
 
 // jsdom에 ImageData가 없으므로 polyfill
 if (typeof globalThis.ImageData === "undefined") {

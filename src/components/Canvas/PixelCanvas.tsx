@@ -130,7 +130,6 @@ export default function PixelCanvas({ disabled }: PixelCanvasProps) {
         data.height
       );
       renderCanvas();
-      useCanvasStore.getState().setDirty(false);
       triggerUpdate();
     },
     [renderCanvas, triggerUpdate]

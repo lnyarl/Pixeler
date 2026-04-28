@@ -1,10 +1,11 @@
 import { test, expect, devices } from "@playwright/test";
+import { createTestProjectAndEnter } from "./_helpers/createTestProject";
 
 test.use({ ...devices["iPhone 13"] });
 
 test.describe("모바일 레이아웃", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await createTestProjectAndEnter(page);
   });
 
   test("모바일에서 프롬프트 입력이 가능하다", async ({ page }) => {

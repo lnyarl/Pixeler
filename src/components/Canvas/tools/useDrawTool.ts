@@ -1,6 +1,7 @@
 import { useRef, useCallback } from "react";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useProjectStore } from "@/stores/projectStore";
 import {
   hexToRgba,
   screenToPixel,
@@ -122,7 +123,7 @@ export function useDrawTool({
         fillPixels(imgData, pixel.x, pixel.y, brushSize, getRgba());
         lastPixelRef.current = pixel;
         onRender();
-        useCanvasStore.getState().setDirty(true);
+        useProjectStore.getState().markDirty();
       }
     },
     [imageDataRef, undoManager, getPixel, getPixelUnbounded, brushSize, getRgba, onRender, onStateChange, currentTool]
@@ -165,7 +166,7 @@ export function useDrawTool({
         const shifted = shiftImageData(baseImage, dx, dy);
         imgData.data.set(shifted.data);
         onRender();
-        useCanvasStore.getState().setDirty(true);
+        useProjectStore.getState().markDirty();
         return;
       }
 

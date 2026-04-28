@@ -24,6 +24,15 @@ export interface HistoryState {
   removeItem: (id: string) => void;
   setActiveItemId: (id: string | null) => void;
   clear: () => void;
+  /**
+   * 전체 items + activeItemId를 일괄 교체 (M1).
+   *
+   * - 트리 구조(parentId)는 호출자가 보장.
+   * - items.length > MAX_HISTORY인 경우 trimLeaves 적용 (오래된 leaf부터).
+   * - activeId가 trim 또는 items에 없으면 폴백 (또는 빈 배열이면 null).
+   * - imageData/thumbnail/rawBase64는 caller 제공 그대로 (deep copy 안 함).
+   */
+  replaceAll: (items: HistoryItem[], activeId: string | null) => void;
 }
 
 export const useHistoryStore = create<HistoryState>((set, get) => ({
@@ -74,6 +83,26 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   setActiveItemId: (id) => set({ activeItemId: id }),
 
   clear: () => set({ items: [], activeItemId: null }),
+
+  replaceAll: (items, activeId) => {
+    if (items.length === 0) {
+      set({ items: [], activeItemId: null });
+      return;
+    }
+    const next = [...items];
+    if (next.length > MAX_HISTORY) {
+      trimLeaves(next, MAX_HISTORY);
+    }
+    // activeId가 items 안에 존재하지 않으면 폴백
+    let nextActive: string | null = activeId;
+    if (nextActive && !next.find((i) => i.id === nextActive)) {
+      nextActive = next[0]?.id ?? null;
+    }
+    if (nextActive === null && next.length > 0) {
+      nextActive = next[0].id;
+    }
+    set({ items: next, activeItemId: nextActive });
+  },
 }));
 
 /** 삭제 시 activeItemId 폴백: 부모 → 자식 → 가까운 항목 → null */

@@ -1,7 +1,19 @@
 import { create } from "zustand";
 import { uuid } from "@/utils/uuid";
 
-export type GenerationMode = "generate" | "feedback" | "inpaint" | "dev-skip";
+export type GenerationMode =
+  | "generate"
+  | "feedback"
+  | "inpaint"
+  | "dev-skip"
+  /** PR-β: 방향 페이즈 시트 1번 호출 */
+  | "direction-sheet"
+  /** PR-β: 방향 페이즈 셀별 재생성 */
+  | "direction-cell"
+  /** PR-γ: 애니메이션 페이즈 시트 호출 */
+  | "animation-sheet"
+  /** PR-γ: 애니메이션 페이즈 단일 프레임 재생성 */
+  | "animation-frame";
 
 export interface DebugLogEntry {
   id: string;

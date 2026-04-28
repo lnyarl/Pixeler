@@ -1,12 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { createTestProjectAndEnter } from "./_helpers/createTestProject";
 
 test.describe("MVP 전체 워크플로우", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await createTestProjectAndEnter(page);
   });
 
   test("앱 로드 시 모든 주요 UI 요소가 표시된다", async ({ page }) => {
-    await expect(page.locator("text=Pixeler")).toBeVisible();
+    await expect(page.getByTestId("wizard-project-name")).toBeVisible();
     await expect(page.locator("text=도구")).toBeVisible();
     await expect(page.locator("text=AI 제공자")).toBeVisible();
     await expect(page.locator("text=프롬프트")).toBeVisible();

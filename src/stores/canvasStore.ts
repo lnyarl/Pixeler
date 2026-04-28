@@ -7,6 +7,12 @@ const MAX_RESOLUTION = 128;
 export type ResolutionPreset = (typeof RESOLUTION_PRESETS)[number];
 export type ToolType = "pen" | "eraser" | "move" | "mask";
 
+/**
+ * 캔버스 declarative state.
+ *
+ * **PR-α 변경 (C1)**: `dirty`/`setDirty` 제거. dirty 개념은 `projectStore.dirty`로 일원화.
+ * 그리기 시 `projectStore.markDirty()` 호출, `useBeforeUnload`도 projectStore.dirty 검사.
+ */
 export interface CanvasState {
   width: number;
   height: number;
@@ -14,14 +20,12 @@ export interface CanvasState {
   currentTool: ToolType;
   currentColor: string;
   brushSize: number;
-  dirty: boolean;
   maskData: ImageData | null;
   setResolution: (width: number, height: number) => void;
   setLinked: (linked: boolean) => void;
   setCurrentTool: (tool: ToolType) => void;
   setCurrentColor: (color: string) => void;
   setBrushSize: (size: number) => void;
-  setDirty: (dirty: boolean) => void;
   setMaskData: (mask: ImageData | null) => void;
   clearMask: () => void;
 }
@@ -41,11 +45,10 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   currentTool: "pen",
   currentColor: "#ffffff",
   brushSize: 1,
-  dirty: false,
   maskData: null,
   setResolution: (width, height) => {
     if (isValidResolution(width) && isValidResolution(height)) {
-      set({ width, height, dirty: false });
+      set({ width, height });
     }
   },
   setLinked: (linked) => set({ linked }),
@@ -58,7 +61,6 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   },
   setMaskData: (mask) => set({ maskData: mask }),
   clearMask: () => set({ maskData: null }),
-  setDirty: (dirty) => set({ dirty }),
 }));
 
 export { RESOLUTION_PRESETS, MIN_RESOLUTION, MAX_RESOLUTION };
