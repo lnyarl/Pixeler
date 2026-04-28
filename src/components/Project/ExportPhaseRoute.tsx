@@ -1,49 +1,46 @@
 /**
- * ExportPhaseRoute — placeholder ("준비 중", PR-δ에서 활성화).
+ * ExportPhaseRoute — export 페이즈 진입점 (PR-δ).
  *
- * 게이트: 활성 sprite가 1개 이상 (베이스 또는 방향).
+ * 게이트 (§5.4.1):
+ * - 최소 1개 sprite 존재 (베이스 OR 방향 1개 OR 애니메이션 프레임 1개).
+ * 미충족 시 베이스 페이즈로 redirect (베이스가 항상 첫 페이즈이므로).
  */
 
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProjectStore } from "@/stores/projectStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import ExportPhase from "./Export/ExportPhase";
 
 export default function ExportPhaseRoute() {
   const { id } = useParams();
   const navigate = useNavigate();
   const basePhase = useProjectStore((s) => s.basePhase);
   const directionsPhase = useProjectStore((s) => s.directionsPhase);
+  const animationsPhase = useProjectStore((s) => s.animationsPhase);
   const setLastPhase = useProjectStore((s) => s.setLastPhase);
+  const historyActiveId = useHistoryStore((s) => s.activeItemId);
+
+  const hasBase =
+    basePhase.activeSpriteId !== null || historyActiveId !== null;
+  const hasDirections = Object.keys(directionsPhase.sprites).length > 0;
+  const hasAnimationFrames = Object.values(animationsPhase.byDirection).some(
+    (perDir) =>
+      !!perDir &&
+      perDir.animations.some((c) => c.frames.length > 0)
+  );
+
+  const eligible = hasBase || hasDirections || hasAnimationFrames;
 
   useEffect(() => {
-    const hasBase = basePhase.activeSpriteId !== null;
-    const hasDirections = Object.keys(directionsPhase.sprites).length > 0;
-    if (!hasBase && !hasDirections) {
+    if (!eligible) {
       navigate(`/project/${id}/base`, { replace: true });
       return;
     }
     setLastPhase("export");
-  }, [
-    basePhase.activeSpriteId,
-    directionsPhase.sprites,
-    id,
-    navigate,
-    setLastPhase,
-  ]);
+  }, [eligible, id, navigate, setLastPhase]);
 
-  return (
-    <div className="flex flex-col h-full items-center justify-center text-center p-8">
-      <h2 className="text-2xl font-semibold text-white mb-2">Export</h2>
-      <p className="text-gray-400 mb-6 max-w-md">
-        준비 중입니다. PR-δ에서 시트 PNG + 메타 JSON 별도 다운로드 기능이
-        활성화됩니다.
-      </p>
-      <button
-        onClick={() => navigate(`/project/${id}/base`)}
-        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-gray-200 text-sm"
-      >
-        ← 베이스 페이즈
-      </button>
-    </div>
-  );
+  if (!eligible) return null;
+
+  return <ExportPhase />;
 }

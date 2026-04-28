@@ -10,6 +10,11 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import type { LastPhase } from "@/services/persistence/types";
 
+/**
+ * PR-α/β/γ: 베이스/방향/애니메이션 게이트.
+ * PR-δ: Export 게이트 — 최소 1개 sprite (베이스 OR 방향 OR 애니메이션 프레임).
+ */
+
 interface StepDef {
   key: LastPhase;
   label: string;
@@ -30,6 +35,7 @@ export default function PhaseStepIndicator() {
   const basePhase = useProjectStore((s) => s.basePhase);
   const historyActive = useHistoryStore((s) => s.activeItemId);
   const directionsPhase = useProjectStore((s) => s.directionsPhase);
+  const animationsPhase = useProjectStore((s) => s.animationsPhase);
 
   function isActive(step: StepDef): boolean {
     return location.pathname.includes(`/${step.path}`);
@@ -44,8 +50,15 @@ export default function PhaseStepIndicator() {
     // 애니메이션: 1개 이상 방향 채워짐.
     const directionCount = Object.keys(directionsPhase.sprites).length;
     if (step.key === "animations") return !hasBase || directionCount === 0;
-    // Export: 1개 이상 sprite 존재.
-    if (step.key === "export") return !hasBase && directionCount === 0;
+    // Export (PR-δ — §5.4.1): 1개 이상 sprite 존재 (베이스 OR 방향 OR 애니메이션 프레임).
+    if (step.key === "export") {
+      const hasFrames = Object.values(animationsPhase.byDirection).some(
+        (perDir) =>
+          !!perDir &&
+          perDir.animations.some((c) => c.frames.length > 0)
+      );
+      return !hasBase && directionCount === 0 && !hasFrames;
+    }
     return false;
   }
 
