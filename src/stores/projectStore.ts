@@ -19,6 +19,8 @@ import type {
   DirectionMode,
   DirectionSprite,
   LastPhase,
+  AnimationClip,
+  AnimationFrame,
 } from "@/services/persistence/types";
 import {
   saveProject as dbSaveProject,
@@ -79,6 +81,37 @@ export interface ProjectState {
 
   /** 마지막 활성 페이즈 갱신 (라우트 복원용). */
   setLastPhase: (phase: LastPhase) => void;
+
+  /** 애니메이션 페이즈 마지막 활성 방향 (m2 — 복원용). */
+  setLastAnimationDirection: (dir: DirKey) => void;
+
+  /** 애니메이션 클립 추가 — 신규 시트 생성 시 호출. */
+  addAnimation: (dir: DirKey, clip: AnimationClip) => void;
+
+  /** 단일 프레임 갱신 (M3 — 프레임 재생성). */
+  updateAnimationFrame: (
+    dir: DirKey,
+    animationId: string,
+    frameIdx: number,
+    frame: AnimationFrame
+  ) => void;
+
+  /** 클립 삭제. */
+  removeAnimation: (dir: DirKey, animationId: string) => void;
+
+  /** 클립 이름 변경. */
+  renameAnimation: (
+    dir: DirKey,
+    animationId: string,
+    name: string
+  ) => void;
+
+  /** 클립 fps 변경. */
+  setAnimationFps: (
+    dir: DirKey,
+    animationId: string,
+    fps: number
+  ) => void;
 
   /** dirty 마킹 + 자동 저장 debounce 시작. */
   markDirty: () => void;
@@ -255,6 +288,101 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (!meta) return;
     if (meta.lastPhase === phase) return;
     set({ meta: { ...meta, lastPhase: phase } });
+    get().markDirty();
+  },
+
+  setLastAnimationDirection: (dir) => {
+    const meta = get().meta;
+    if (!meta) return;
+    if (meta.lastAnimationDirection === dir) return;
+    set({ meta: { ...meta, lastAnimationDirection: dir } });
+    get().markDirty();
+  },
+
+  addAnimation: (dir, clip) => {
+    const phase = get().animationsPhase;
+    const perDir = phase.byDirection[dir] ?? { animations: [] };
+    const next: AnimationsPhaseState = {
+      byDirection: {
+        ...phase.byDirection,
+        [dir]: { animations: [...perDir.animations, clip] },
+      },
+    };
+    set({ animationsPhase: next });
+    get().markDirty();
+  },
+
+  updateAnimationFrame: (dir, animationId, frameIdx, frame) => {
+    const phase = get().animationsPhase;
+    const perDir = phase.byDirection[dir];
+    if (!perDir) return;
+    const updated = perDir.animations.map((c) => {
+      if (c.id !== animationId) return c;
+      if (frameIdx < 0 || frameIdx >= c.frames.length) return c;
+      const frames = c.frames.slice();
+      frames[frameIdx] = frame;
+      return { ...c, frames };
+    });
+    set({
+      animationsPhase: {
+        byDirection: {
+          ...phase.byDirection,
+          [dir]: { animations: updated },
+        },
+      },
+    });
+    get().markDirty();
+  },
+
+  removeAnimation: (dir, animationId) => {
+    const phase = get().animationsPhase;
+    const perDir = phase.byDirection[dir];
+    if (!perDir) return;
+    const filtered = perDir.animations.filter((c) => c.id !== animationId);
+    const nextByDir = { ...phase.byDirection };
+    if (filtered.length === 0) {
+      delete nextByDir[dir];
+    } else {
+      nextByDir[dir] = { animations: filtered };
+    }
+    set({ animationsPhase: { byDirection: nextByDir } });
+    get().markDirty();
+  },
+
+  renameAnimation: (dir, animationId, name) => {
+    const phase = get().animationsPhase;
+    const perDir = phase.byDirection[dir];
+    if (!perDir) return;
+    const updated = perDir.animations.map((c) =>
+      c.id === animationId ? { ...c, name } : c
+    );
+    set({
+      animationsPhase: {
+        byDirection: {
+          ...phase.byDirection,
+          [dir]: { animations: updated },
+        },
+      },
+    });
+    get().markDirty();
+  },
+
+  setAnimationFps: (dir, animationId, fps) => {
+    const phase = get().animationsPhase;
+    const perDir = phase.byDirection[dir];
+    if (!perDir) return;
+    const clamped = Math.max(1, Math.min(60, Math.round(fps)));
+    const updated = perDir.animations.map((c) =>
+      c.id === animationId ? { ...c, fps: clamped } : c
+    );
+    set({
+      animationsPhase: {
+        byDirection: {
+          ...phase.byDirection,
+          [dir]: { animations: updated },
+        },
+      },
+    });
     get().markDirty();
   },
 
