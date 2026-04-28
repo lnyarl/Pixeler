@@ -4,6 +4,7 @@ import type {
   GeneratedImage,
   FeedbackOptions,
   ProviderCapabilities,
+  ControlStructureOptions,
 } from "../types";
 import { fetchWithRetry } from "../fetchWithRetry";
 import {
@@ -23,6 +24,7 @@ export class StabilityAdapter implements AIAdapter {
   readonly capabilities: ProviderCapabilities = {
     supportsMultipleOutputs: false,
     supportsImageReference: true,
+    supportsControlStructure: true,
   };
 
   constructor(private apiKey: string) {}
@@ -140,6 +142,66 @@ export class StabilityAdapter implements AIAdapter {
         metadata: {
           provider: this.name,
           model: "sd3-img2img",
+          prompt: options.prompt,
+          timestamp: Date.now(),
+        },
+      },
+    ];
+  }
+
+  /**
+   * v2beta control/structure (PR-β — 방향 시트 / 단일 방향 셀 재생성).
+   *
+   * 엔드포인트: POST /v2beta/stable-image/control/structure
+   * multipart/form-data 필드 (M5 — width/height 없음, input image 비율 사용):
+   *   - image: input PNG (구조 control 가이드)
+   *   - prompt
+   *   - control_strength (0..1, default 0.7)
+   *   - output_format=png
+   *
+   * 응답: { image: base64, finish_reason, seed } (Accept: application/json)
+   */
+  async controlStructure(
+    options: ControlStructureOptions
+  ): Promise<GeneratedImage[]> {
+    const formData = new FormData();
+    formData.append("prompt", options.prompt);
+    formData.append(
+      "image",
+      base64ToBlob(options.inputImage),
+      "structure.png"
+    );
+    formData.append(
+      "control_strength",
+      String(options.controlStrength ?? 0.7)
+    );
+    formData.append("output_format", "png");
+
+    const response = await fetchWithRetry(
+      `${API_BASE}/stable-image/control/structure`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          Accept: "application/json",
+        },
+        body: formData,
+      },
+      { signal: options.signal }
+    );
+
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      throwApiError(response.status, errorBody);
+    }
+
+    const data = await response.json();
+    return [
+      {
+        base64: data.image,
+        metadata: {
+          provider: this.name,
+          model: "control-structure",
           prompt: options.prompt,
           timestamp: Date.now(),
         },
