@@ -1,9 +1,10 @@
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useCanvasStore } from "@/stores/canvasStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useDebugLogStore } from "@/stores/debugLogStore";
 import type { DownscaleAlgorithm } from "@/stores/settingsStore";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
-import { base64ToImageData } from "@/utils/imageConvert";
+import { base64ToImageData, imageDataToBase64 } from "@/utils/imageConvert";
 
 interface PostProcessSelectorProps {
   onImageReady: (data: ImageData) => void;
@@ -36,6 +37,15 @@ export default function PostProcessSelector({
       config,
     });
     onImageReady(result);
+
+    // 같은 rawBase64를 가진 가장 최근 디버그 로그 엔트리의 processedOutput 갱신
+    const debug = useDebugLogStore.getState();
+    const target = debug.entries.find((e) => e.rawOutput === activeItem.rawBase64);
+    if (target) {
+      debug.updateEntry(target.id, {
+        processedOutput: imageDataToBase64(result),
+      });
+    }
   }
 
   return (
