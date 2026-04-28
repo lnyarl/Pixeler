@@ -59,6 +59,7 @@ export default function PromptPanel({
   const selectedProvider = useSettingsStore((s) => s.selectedProvider);
   const apiKeys = useSettingsStore((s) => s.apiKeys);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
+  const requireEdges = useSettingsStore((s) => s.requireEdges);
   const postProcess = useSettingsStore((s) => s.postProcess);
   const addHistoryItem = useHistoryStore((s) => s.addItem);
   const historyItems = useHistoryStore((s) => s.items);
@@ -110,7 +111,8 @@ export default function PromptPanel({
           prompt,
           width,
           height,
-          paletteSize
+          paletteSize,
+          requireEdges
         );
 
         // 참조 이미지에 마스크를 반투명 빨강으로 오버레이
@@ -140,6 +142,7 @@ export default function PromptPanel({
             width,
             height,
             paletteSize,
+            requireEdges,
             masked: true,
             signal: controller.signal,
           });
@@ -166,7 +169,8 @@ export default function PromptPanel({
           prompt,
           width,
           height,
-          paletteSize
+          paletteSize,
+          requireEdges
         );
         const referenceBase64 = imageDataToBase64(canvasData!);
 
@@ -191,6 +195,7 @@ export default function PromptPanel({
             width,
             height,
             paletteSize,
+            requireEdges,
             signal: controller.signal,
           });
           // 첫 결과를 로그에 기록 (1장 기준, 다중일 때는 첫 장만)
@@ -213,7 +218,8 @@ export default function PromptPanel({
           prompt,
           width,
           height,
-          paletteSize
+          paletteSize,
+          requireEdges
         );
 
         const logId = startLog({
@@ -236,6 +242,7 @@ export default function PromptPanel({
             height,
             count,
             paletteSize,
+            requireEdges,
             signal: controller.signal,
           });
           updateLog(logId, {

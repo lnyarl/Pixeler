@@ -26,11 +26,17 @@ export interface SettingsState {
   selectedProvider: AIProviderType;
   paletteSize: number;
   postProcess: PostProcessConfig;
+  /**
+   * AI 프롬프트에 1픽셀 다크 외곽선 힌트를 추가할지 여부.
+   * buildStyleLine이 이 값을 받아 외곽선 텍스트를 append (default: false → 기존 동작 동일).
+   */
+  requireEdges: boolean;
   setApiKey: (provider: AIProviderType, key: string) => void;
   removeApiKey: (provider: AIProviderType) => void;
   setSelectedProvider: (provider: AIProviderType) => void;
   setPaletteSize: (size: number) => void;
   setPostProcess: (patch: Partial<PostProcessConfig>) => void;
+  setRequireEdges: (v: boolean) => void;
 }
 
 const STORAGE_KEY = "pixeler_api_keys";
@@ -59,6 +65,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     paletteMap: true,
     outlinePreserve: false,
   },
+  requireEdges: false,
 
   setApiKey: (provider, key) => {
     const updated = { ...get().apiKeys, [provider]: key };
@@ -78,4 +85,5 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   setPostProcess: (patch) =>
     set((state) => ({ postProcess: { ...state.postProcess, ...patch } })),
+  setRequireEdges: (v) => set({ requireEdges: v }),
 }));

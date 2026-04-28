@@ -14,6 +14,8 @@ export interface GenerateOptions {
   count: number;
   /** 팔레트 색상 수 — 프롬프트에 삽입 (0이면 제한 없음) */
   paletteSize?: number;
+  /** AI에 1픽셀 다크 외곽선을 요구하는 프롬프트 힌트 (default: false) */
+  requireEdges?: boolean;
   /** 요청 취소용 */
   signal?: AbortSignal;
 }
@@ -35,6 +37,8 @@ export interface FeedbackOptions {
    * 어댑터는 buildMaskedFeedbackPrompt를 써서 AI에 오버레이 의미를 설명한다.
    */
   masked?: boolean;
+  /** AI에 1픽셀 다크 외곽선을 요구하는 프롬프트 힌트 (default: false) */
+  requireEdges?: boolean;
   signal?: AbortSignal;
 }
 
