@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { uuid } from "@/utils/uuid";
 
 const MAX_HISTORY = 100;
 
@@ -30,7 +31,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   activeItemId: null,
 
   addItem: (item) => {
-    const newId = crypto.randomUUID();
+    const newId = uuid();
     set((state) => {
       const newItem: HistoryItem = {
         ...item,

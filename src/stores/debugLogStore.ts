@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { uuid } from "@/utils/uuid";
 
 export type GenerationMode = "generate" | "feedback" | "inpaint" | "dev-skip";
 
@@ -53,7 +54,7 @@ export const useDebugLogStore = create<DebugLogState>((set) => ({
   entries: [],
 
   startEntry: (entry) => {
-    const id = crypto.randomUUID();
+    const id = uuid();
     set((state) => {
       const newEntry: DebugLogEntry = {
         ...entry,
