@@ -71,6 +71,12 @@ export interface ProjectState {
   /** 단일 방향 sprite 갱신. */
   setDirectionSprite: (dir: DirKey, sprite: DirectionSprite | null) => void;
 
+  /** 단일 방향 sprite 제거 (재생성 전 초기화 등). */
+  clearDirectionSprite: (dir: DirKey) => void;
+
+  /** AI가 만든 1024 원본 시트 base64 저장 (재분할 디버그용). */
+  setDirectionSheetRaw: (rawBase64: string | undefined) => void;
+
   /** 마지막 활성 페이즈 갱신 (라우트 복원용). */
   setLastPhase: (phase: LastPhase) => void;
 
@@ -226,6 +232,21 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (sprite) sprites[dir] = sprite;
     else delete sprites[dir];
     set({ directionsPhase: { ...get().directionsPhase, sprites } });
+    get().markDirty();
+  },
+
+  clearDirectionSprite: (dir) => {
+    const sprites = { ...get().directionsPhase.sprites };
+    if (!(dir in sprites)) return;
+    delete sprites[dir];
+    set({ directionsPhase: { ...get().directionsPhase, sprites } });
+    get().markDirty();
+  },
+
+  setDirectionSheetRaw: (rawBase64) => {
+    set({
+      directionsPhase: { ...get().directionsPhase, sheetRawBase64: rawBase64 },
+    });
     get().markDirty();
   },
 

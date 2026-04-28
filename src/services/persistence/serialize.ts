@@ -65,10 +65,24 @@ export async function imageDataToBlob(img: ImageData): Promise<Blob> {
  * Blob → ImageData. raw 폴백 형식을 우선 검사하고, 그 외에는 createImageBitmap → canvas.
  */
 export async function blobToImageData(blob: Blob): Promise<ImageData> {
-  // raw fallback 우선 (테스트 환경)
-  const head = await blob.slice(0, RAW_HEADER.length).text();
-  if (head === RAW_HEADER) {
-    return await rawBlobToImageData(blob);
+  // raw fallback 우선 (테스트 환경).
+  // 일부 jsdom 환경에서 fake-indexeddb를 거치며 blob.slice가 제대로 동작 안 할 수 있어 try/catch.
+  try {
+    if (typeof blob.slice === "function") {
+      const head = await blob.slice(0, RAW_HEADER.length).text();
+      if (head === RAW_HEADER) {
+        return await rawBlobToImageData(blob);
+      }
+    } else {
+      // slice 없이 arrayBuffer를 직접 검사 (fallback).
+      const buf = await blob.arrayBuffer();
+      const head = new TextDecoder().decode(buf.slice(0, RAW_HEADER.length));
+      if (head === RAW_HEADER) {
+        return await rawBlobToImageData(blob);
+      }
+    }
+  } catch {
+    // slice/arrayBuffer 실패 — PNG 경로로 fall through.
   }
 
   // PNG → createImageBitmap → canvas → getImageData
