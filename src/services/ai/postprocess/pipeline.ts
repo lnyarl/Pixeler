@@ -18,6 +18,7 @@ const DEFAULT_CONFIG: PostProcessConfig = {
   downscale: "mode",
   transparentBg: true,
   paletteMap: true,
+  outlinePreserve: false,
 };
 
 /**
@@ -93,9 +94,12 @@ export async function runPostProcess(
     }
 
     // Step D: mid → target. paletteMap 토글과 무관하게 항상 실행.
+    // outlinePreserve는 mode 알고리즘에서만 의미 있음. nearest는 옵션 무시.
     result =
       config.downscale === "mode"
-        ? downscaleMode(result, targetWidth, targetHeight)
+        ? downscaleMode(result, targetWidth, targetHeight, {
+            preserveOutline: config.outlinePreserve,
+          })
         : downscale(result, targetWidth, targetHeight);
   }
 

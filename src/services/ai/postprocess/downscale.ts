@@ -31,27 +31,52 @@ export function downscale(
 }
 
 /**
+ * downscaleMode 옵션 (기획서 §3 / §6.2).
+ */
+export interface DownscaleModeOptions {
+  /**
+   * 외곽선 보존: 블록 내 가장 어두운 α>128 픽셀이 mode 후보보다 luminance가 임계 이상 작으면 그 픽셀로 대체.
+   * 기본 false. 미제공 시 기존 mode 동작 100% 동일.
+   */
+  preserveOutline?: boolean;
+}
+
+/** luminance 근사: (2*r + 5*g + b) >> 3, 정수 0~255 (기획서 §4.2). */
+function luminance(r: number, g: number, b: number): number {
+  return (2 * r + 5 * g + b) >> 3;
+}
+
+/** outlinePreserve 임계치 — modeLum - darkLum 갭이 이 값 이상이면 darkest 채택 (기획서 §4.2). */
+const OUTLINE_LUMINANCE_THRESHOLD = 64;
+
+/**
  * Mode(최빈색) 기반 다운스케일.
  * 각 출력 픽셀 = 해당 원본 블록에서 가장 많이 나타난 색.
  * AI가 이미 픽셀아트 스타일로 그렸을 때 (1024x1024에 32x32 픽셀이 32x32 블록으로 표현) 훨씬 깨끗한 결과.
  *
  * 색 비교는 16단계 양자화 (`>>4` 시프트, 채널당 16버킷) 후 mode 추출 → 첫 등장 원본 RGBA 복원.
  * 양자화 키는 채널별 시프트를 비트 OR로 합쳐 65536 버킷 단일 정수로 인코딩 (기획서 §4.6 / §6.2).
+ *
+ * options.preserveOutline=true면 블록 내 가장 어두운 α>128 픽셀의 luminance가
+ * mode 후보보다 OUTLINE_LUMINANCE_THRESHOLD(64) 이상 작을 때 darkest로 대체 (기획서 §4.2).
  */
 export function downscaleMode(
   src: ImageData,
   targetWidth: number,
-  targetHeight: number
+  targetHeight: number,
+  options?: DownscaleModeOptions
 ): ImageData {
   if (src.width === targetWidth && src.height === targetHeight) return src;
 
   // M4 안전망: blockW<1이면 빈 블록 발생 → nearest 폴백 (기획서 §4.3 / §6.2 변경 1).
+  // 폴백 경로에서는 블록 분석 자체를 안 하므로 preserveOutline은 자연스럽게 무동작.
   const blockW = src.width / targetWidth;
   const blockH = src.height / targetHeight;
   if (blockW < 1 || blockH < 1) {
     return downscale(src, targetWidth, targetHeight);
   }
 
+  const preserveOutline = options?.preserveOutline === true;
   const dst = new ImageData(targetWidth, targetHeight);
 
   for (let y = 0; y < targetHeight; y++) {
@@ -63,6 +88,9 @@ export function downscaleMode(
 
       // 블록 내 색상 빈도 + 대표 원본 색 저장
       const counts = new Map<number, { count: number; r: number; g: number; b: number; a: number }>();
+
+      // outlinePreserve용 darkest 추적 (α>128 픽셀 중 최저 luminance).
+      let darkest: { r: number; g: number; b: number; a: number; lum: number } | null = null;
 
       for (let by = startY; by < endY; by++) {
         for (let bx = startX; bx < endX; bx++) {
@@ -80,6 +108,14 @@ export function downscaleMode(
           } else {
             counts.set(key, { count: 1, r, g, b, a });
           }
+
+          // outlinePreserve: α>128 픽셀 중 가장 어두운 픽셀 추적.
+          if (preserveOutline && a > 128) {
+            const lum = luminance(r, g, b);
+            if (darkest === null || lum < darkest.lum) {
+              darkest = { r, g, b, a, lum };
+            }
+          }
         }
       }
 
@@ -89,11 +125,26 @@ export function downscaleMode(
         if (entry.count > best.count) best = entry;
       }
 
+      // outlinePreserve 적용 판정: darkest가 mode보다 임계 이상 어두우면 darkest로 대체.
+      let outR = best.r;
+      let outG = best.g;
+      let outB = best.b;
+      let outA = best.a;
+      if (preserveOutline && darkest !== null) {
+        const modeLum = luminance(best.r, best.g, best.b);
+        if (modeLum - darkest.lum >= OUTLINE_LUMINANCE_THRESHOLD) {
+          outR = darkest.r;
+          outG = darkest.g;
+          outB = darkest.b;
+          outA = darkest.a;
+        }
+      }
+
       const dstIdx = (y * targetWidth + x) * 4;
-      dst.data[dstIdx] = best.r;
-      dst.data[dstIdx + 1] = best.g;
-      dst.data[dstIdx + 2] = best.b;
-      dst.data[dstIdx + 3] = best.a;
+      dst.data[dstIdx] = outR;
+      dst.data[dstIdx + 1] = outG;
+      dst.data[dstIdx + 2] = outB;
+      dst.data[dstIdx + 3] = outA;
     }
   }
 

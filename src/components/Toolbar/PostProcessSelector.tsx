@@ -66,6 +66,29 @@ export default function PostProcessSelector({
         </select>
       </div>
 
+      {/* 외곽선 보존 — mode 알고리즘에서만 유효. nearest 선택 시 disabled (UX 명료성). */}
+      <label
+        className={`flex items-center gap-2 text-xs ${
+          config.downscale === "mode"
+            ? "text-gray-300 cursor-pointer"
+            : "text-gray-500 opacity-50 cursor-not-allowed"
+        }`}
+        title={
+          config.downscale === "mode"
+            ? "어두운 외곽선 픽셀이 mode 후보보다 충분히 어두우면 외곽선을 보존"
+            : "다운스케일이 '최빈색'일 때만 사용 가능"
+        }
+      >
+        <input
+          type="checkbox"
+          checked={config.outlinePreserve}
+          onChange={(e) => setConfig({ outlinePreserve: e.target.checked })}
+          disabled={config.downscale !== "mode"}
+          className="accent-blue-500"
+        />
+        <span>외곽선 보존</span>
+      </label>
+
       <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer">
         <input
           type="checkbox"

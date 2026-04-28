@@ -140,6 +140,117 @@ describe("downscaleMode", () => {
     expect(result.data[2]).toBe(200);
   });
 
+  // T11(PR1): outlinePreserve=true, 단일 어두운 픽셀 보존 (기획서 §9.1).
+  // 4×4 단일 블록 → 1×1. 면색 (200,200,200,255) 15개 + 외곽선 (20,20,20,255) 1개.
+  // lum 면색 = (400+1000+200)>>3 = 200, 외곽선 = (40+100+20)>>3 = 20. 갭 180 ≥ 64 → darkest 채택.
+  it("T11(PR1): outlinePreserve=true — 임계 이상 어두운 픽셀이 mode를 대체", () => {
+    const src = new ImageData(4, 4);
+    function set(x: number, y: number, r: number, g: number, b: number, a = 255) {
+      const idx = (y * 4 + x) * 4;
+      src.data[idx] = r;
+      src.data[idx + 1] = g;
+      src.data[idx + 2] = b;
+      src.data[idx + 3] = a;
+    }
+    // 16픽셀 모두 면색 (200,200,200) 우선 채움
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 4; x++) {
+        set(x, y, 200, 200, 200);
+      }
+    }
+    // 단 1개만 외곽선 픽셀로 교체
+    set(0, 0, 20, 20, 20);
+
+    const result = downscaleMode(src, 1, 1, { preserveOutline: true });
+    expect(result.data[0]).toBe(20);
+    expect(result.data[1]).toBe(20);
+    expect(result.data[2]).toBe(20);
+    expect(result.data[3]).toBe(255);
+  });
+
+  // T12(PR1): outlinePreserve=true, 임계 미달 → mode 유지.
+  // 면색 (150,150,150) 15개 + 약간 어두운 (120,120,120) 1개. lum 갭 = 30 < 64.
+  it("T12(PR1): outlinePreserve=true — 임계 미달이면 mode 유지", () => {
+    const src = new ImageData(4, 4);
+    function set(x: number, y: number, r: number, g: number, b: number, a = 255) {
+      const idx = (y * 4 + x) * 4;
+      src.data[idx] = r;
+      src.data[idx + 1] = g;
+      src.data[idx + 2] = b;
+      src.data[idx + 3] = a;
+    }
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 4; x++) {
+        set(x, y, 150, 150, 150);
+      }
+    }
+    set(0, 0, 120, 120, 120);
+
+    const result = downscaleMode(src, 1, 1, { preserveOutline: true });
+    // mode = 150 유지
+    expect(result.data[0]).toBe(150);
+    expect(result.data[1]).toBe(150);
+    expect(result.data[2]).toBe(150);
+  });
+
+  // T13(PR1): outlinePreserve=true, α<=128인 어두운 픽셀은 darkest 후보에서 제외.
+  // 면색 (200,200,200,255) 15개 + (10,10,10,100) 1개 → α≤128이라 무시 → mode 유지.
+  it("T13(PR1): outlinePreserve=true — α<=128 어두운 픽셀은 무시", () => {
+    const src = new ImageData(4, 4);
+    function set(x: number, y: number, r: number, g: number, b: number, a = 255) {
+      const idx = (y * 4 + x) * 4;
+      src.data[idx] = r;
+      src.data[idx + 1] = g;
+      src.data[idx + 2] = b;
+      src.data[idx + 3] = a;
+    }
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 4; x++) {
+        set(x, y, 200, 200, 200);
+      }
+    }
+    // α=100은 임계 (128) 이하 → darkest 후보에서 제외
+    set(0, 0, 10, 10, 10, 100);
+
+    const result = downscaleMode(src, 1, 1, { preserveOutline: true });
+    // mode = (200,200,200,255) 유지
+    expect(result.data[0]).toBe(200);
+    expect(result.data[1]).toBe(200);
+    expect(result.data[2]).toBe(200);
+    expect(result.data[3]).toBe(255);
+  });
+
+  // T14(PR1): outlinePreserve=false (기본/미전달) — T11 동일 입력에서 mode 그대로.
+  // 회귀 0 검증: 옵션 미전달 시 기존 동작 100% 동일.
+  it("T14(PR1): outlinePreserve=false — 기존 mode 동작 회귀 0", () => {
+    const src = new ImageData(4, 4);
+    function set(x: number, y: number, r: number, g: number, b: number, a = 255) {
+      const idx = (y * 4 + x) * 4;
+      src.data[idx] = r;
+      src.data[idx + 1] = g;
+      src.data[idx + 2] = b;
+      src.data[idx + 3] = a;
+    }
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 4; x++) {
+        set(x, y, 200, 200, 200);
+      }
+    }
+    set(0, 0, 20, 20, 20);
+
+    // 옵션 미제공
+    const resultNoOpt = downscaleMode(src, 1, 1);
+    expect(resultNoOpt.data[0]).toBe(200);
+    expect(resultNoOpt.data[1]).toBe(200);
+    expect(resultNoOpt.data[2]).toBe(200);
+
+    // 명시적 false
+    const resultFalse = downscaleMode(src, 1, 1, { preserveOutline: false });
+    expect(resultFalse.data[0]).toBe(200);
+    expect(resultFalse.data[1]).toBe(200);
+    expect(resultFalse.data[2]).toBe(200);
+  });
+
   // T12: blockW < 1 → nearest 폴백 (기획서 §6.2 변경 1).
   // src=33, target=32 → blockW≈1.03 (≥1, 폴백 안 함). src=16, target=32 → blockW=0.5 (폴백).
   it("T12: blockW < 1이면 nearest 폴백 작동, (0,0,0,0) 픽셀 발생 안 함", () => {

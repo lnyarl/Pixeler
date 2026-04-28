@@ -171,6 +171,7 @@ describe("runPostProcess", () => {
           downscale: "mode",
           transparentBg: true,
           paletteMap: false,
+          outlinePreserve: false,
         },
       });
     } finally {
@@ -236,6 +237,7 @@ describe("runPostProcess", () => {
           downscale: "mode",
           transparentBg: false,
           paletteMap: true,
+          outlinePreserve: false,
         },
       });
     } finally {
@@ -298,6 +300,7 @@ describe("runPostProcess", () => {
           downscale: "mode",
           transparentBg: false,
           paletteMap: false,
+          outlinePreserve: false,
         },
       });
     } finally {
@@ -396,6 +399,7 @@ describe("runPostProcess", () => {
           downscale: "mode",
           transparentBg: false,
           paletteMap: false,
+          outlinePreserve: false,
         },
       });
     } finally {
@@ -407,5 +411,177 @@ describe("runPostProcess", () => {
 
     // 16 ≤ 32 이므로 boxAverage 호출 안 됨
     expect(events).toEqual([]);
+  });
+
+  // T15a(PR1): outlinePreserve=true + downscale="mode"
+  //   → pipeline이 downscaleMode 호출 시 4번째 인자로 { preserveOutline: true } 전달.
+  it("T15a(PR1): outlinePreserve=true + mode — downscaleMode에 preserveOutline=true 전달", async () => {
+    const src = new ImageData(64, 64);
+    for (let i = 0; i < src.data.length; i += 4) {
+      src.data[i + 3] = 255;
+    }
+
+    // 호출 인자를 closure로 캡처 (mockRestore가 spy 상태를 정리해도 보존)
+    const downscaleCalls: unknown[][] = [];
+    const downscaleSpy = vi
+      .spyOn(downscaleModule, "downscaleMode")
+      .mockImplementation((...args: unknown[]) => {
+        downscaleCalls.push(args);
+        const w = args[1] as number;
+        const h = args[2] as number;
+        return new ImageData(w, h);
+      });
+    const boxSpy = vi
+      .spyOn(boxAverageModule, "boxAverage")
+      .mockImplementation(async (_img, w, h) => new ImageData(w, h));
+    const paletteSpy = vi
+      .spyOn(paletteMapModule, "paletteMap")
+      .mockImplementation((img) => ({ result: img, palette: [] as const }));
+    const transparentSpy = vi
+      .spyOn(transparentModule, "makeTransparentBackground")
+      .mockImplementation((img) => img);
+
+    try {
+      await runPostProcess(src, {
+        targetWidth: 8,
+        targetHeight: 8,
+        paletteSize: 4,
+        providerType: "openai",
+        config: {
+          downscale: "mode",
+          transparentBg: false,
+          paletteMap: false,
+          outlinePreserve: true,
+        },
+      });
+    } finally {
+      downscaleSpy.mockRestore();
+      boxSpy.mockRestore();
+      paletteSpy.mockRestore();
+      transparentSpy.mockRestore();
+    }
+
+    // 4번째 인자 옵션 검증
+    expect(downscaleCalls).toHaveLength(1);
+    const call = downscaleCalls[0];
+    expect(call[1]).toBe(8); // targetWidth
+    expect(call[2]).toBe(8); // targetHeight
+    expect(call[3]).toEqual({ preserveOutline: true });
+  });
+
+  // T15b(PR1): outlinePreserve=true + downscale="nearest"
+  //   → nearest 분기 호출, downscaleMode 미호출. nearest는 옵션 미수령.
+  it("T15b(PR1): outlinePreserve=true + nearest — downscaleMode 미호출, nearest 호출", async () => {
+    const src = new ImageData(64, 64);
+    for (let i = 0; i < src.data.length; i += 4) {
+      src.data[i + 3] = 255;
+    }
+
+    const events: string[] = [];
+    const modeCalls: unknown[][] = [];
+    const nearestCalls: unknown[][] = [];
+
+    const modeSpy = vi
+      .spyOn(downscaleModule, "downscaleMode")
+      .mockImplementation((...args: unknown[]) => {
+        modeCalls.push(args);
+        const w = args[1] as number;
+        const h = args[2] as number;
+        events.push(`mode(->${w})`);
+        return new ImageData(w, h);
+      });
+    const nearestSpy = vi
+      .spyOn(downscaleModule, "downscale")
+      .mockImplementation((...args: unknown[]) => {
+        nearestCalls.push(args);
+        const w = args[1] as number;
+        const h = args[2] as number;
+        events.push(`nearest(->${w})`);
+        return new ImageData(w, h);
+      });
+    const boxSpy = vi
+      .spyOn(boxAverageModule, "boxAverage")
+      .mockImplementation(async (_img, w, h) => new ImageData(w, h));
+    const paletteSpy = vi
+      .spyOn(paletteMapModule, "paletteMap")
+      .mockImplementation((img) => ({ result: img, palette: [] as const }));
+    const transparentSpy = vi
+      .spyOn(transparentModule, "makeTransparentBackground")
+      .mockImplementation((img) => img);
+
+    try {
+      await runPostProcess(src, {
+        targetWidth: 8,
+        targetHeight: 8,
+        paletteSize: 4,
+        providerType: "openai",
+        config: {
+          downscale: "nearest",
+          transparentBg: false,
+          paletteMap: false,
+          outlinePreserve: true,
+        },
+      });
+    } finally {
+      modeSpy.mockRestore();
+      nearestSpy.mockRestore();
+      boxSpy.mockRestore();
+      paletteSpy.mockRestore();
+      transparentSpy.mockRestore();
+    }
+
+    expect(modeCalls).toHaveLength(0);
+    expect(nearestCalls).toHaveLength(1);
+    // nearest 시그니처는 (img, w, h)뿐 — 옵션 인자 없음
+    expect(nearestCalls[0]).toHaveLength(3);
+    expect(events).toEqual(["nearest(->8)"]);
+  });
+
+  // T15c(PR1): outlinePreserve 미지정(DEFAULT_CONFIG) — false가 전달되어 기존 동작 보존.
+  it("T15c(PR1): config 미제공 — DEFAULT_CONFIG의 outlinePreserve=false가 전달", async () => {
+    const src = new ImageData(64, 64);
+    for (let i = 0; i < src.data.length; i += 4) {
+      src.data[i + 3] = 255;
+    }
+
+    const downscaleCalls: unknown[][] = [];
+    const downscaleSpy = vi
+      .spyOn(downscaleModule, "downscaleMode")
+      .mockImplementation((...args: unknown[]) => {
+        downscaleCalls.push(args);
+        const w = args[1] as number;
+        const h = args[2] as number;
+        return new ImageData(w, h);
+      });
+    const boxSpy = vi
+      .spyOn(boxAverageModule, "boxAverage")
+      .mockImplementation(async (_img, w, h) => new ImageData(w, h));
+    const paletteSpy = vi
+      .spyOn(paletteMapModule, "paletteMap")
+      .mockImplementation((img) => ({
+        result: img,
+        palette: [[100, 100, 100]] as const,
+      }));
+    const transparentSpy = vi
+      .spyOn(transparentModule, "makeTransparentBackground")
+      .mockImplementation((img) => img);
+
+    try {
+      await runPostProcess(src, {
+        targetWidth: 8,
+        targetHeight: 8,
+        paletteSize: 4,
+        providerType: "openai",
+        // config 미제공 → DEFAULT_CONFIG 사용
+      });
+    } finally {
+      downscaleSpy.mockRestore();
+      boxSpy.mockRestore();
+      paletteSpy.mockRestore();
+      transparentSpy.mockRestore();
+    }
+
+    expect(downscaleCalls).toHaveLength(1);
+    expect(downscaleCalls[0][3]).toEqual({ preserveOutline: false });
   });
 });

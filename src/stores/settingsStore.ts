@@ -13,6 +13,12 @@ export interface PostProcessConfig {
   downscale: DownscaleAlgorithm;
   transparentBg: boolean;
   paletteMap: boolean;
+  /**
+   * 외곽선 보존 (downscale="mode"일 때만 적용).
+   * 블록 내 가장 어두운 α>128 픽셀이 mode 후보보다 luminance가 임계치(64) 이상 작으면 그 픽셀로 대체.
+   * 기본 false → 기존 동작 100% 동일.
+   */
+  outlinePreserve: boolean;
 }
 
 export interface SettingsState {
@@ -51,6 +57,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     downscale: "mode",
     transparentBg: true,
     paletteMap: true,
+    outlinePreserve: false,
   },
 
   setApiKey: (provider, key) => {
