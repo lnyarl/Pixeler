@@ -46,6 +46,9 @@ export class StabilityAdapter implements AIAdapter {
       try {
         const formData = new FormData();
         formData.append("prompt", prompt);
+        formData.append("negative_prompt", "realistic, photographic, 3D render, anti-aliasing, smooth gradients, blurry, soft shading, watermark");
+        formData.append("style_preset", "pixel-art");
+        formData.append("aspect_ratio", "1:1");
         formData.append("output_format", "png");
 
         const response = await fetchWithRetry(
@@ -108,13 +111,15 @@ export class StabilityAdapter implements AIAdapter {
 
     const formData = new FormData();
     formData.append("prompt", prompt);
+    formData.append("negative_prompt", "realistic, photographic, 3D render, anti-aliasing, smooth gradients, blurry, soft shading, watermark");
     formData.append("mode", "image-to-image");
+    formData.append("model", "sd3.5-large-turbo");
     formData.append(
       "image",
       base64ToBlob(options.referenceImage),
       "reference.png"
     );
-    formData.append("strength", "0.6");
+    formData.append("strength", "0.2");
     formData.append("output_format", "png");
 
     const response = await fetchWithRetry(
