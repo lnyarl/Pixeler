@@ -108,6 +108,7 @@ export class StabilityAdapter implements AIAdapter {
 
     const formData = new FormData();
     formData.append("prompt", prompt);
+    formData.append("mode", "image-to-image");
     formData.append(
       "image",
       base64ToBlob(options.referenceImage),
@@ -210,7 +211,12 @@ export class StabilityAdapter implements AIAdapter {
 }
 
 function throwApiError(status: number, body: Record<string, unknown>): never {
-  const message = (body?.message as string) ?? "알 수 없는 오류";
+  // Stability v2beta는 { name, errors: [...] } 형식. OpenAI 호환형은 { message }.
+  const errors = body?.errors;
+  const message =
+    (Array.isArray(errors) && errors.length > 0
+      ? String(errors[0])
+      : (body?.message as string)) ?? "알 수 없는 오류";
 
   switch (status) {
     case 401:
