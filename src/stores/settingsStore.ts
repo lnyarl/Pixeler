@@ -2,6 +2,16 @@ import { create } from "zustand";
 
 export type DownscaleAlgorithm = "mode" | "nearest";
 
+/** AI 제공자 선택 */
+export type ProviderType = "stability" | "localSD";
+
+/** Local SD 연결 설정 */
+export interface LocalSDSettings {
+  url: string;
+  loraName: string;
+  loraWeight: number;
+}
+
 /** 후처리 단계별 on/off */
 export interface PostProcessConfig {
   downscale: DownscaleAlgorithm;
@@ -16,8 +26,12 @@ export interface PostProcessConfig {
 }
 
 export interface SettingsState {
-  /** Stability AI API 키 (단일 provider 운영). */
+  /** Stability AI API 키. */
   apiKey: string;
+  /** 활성 AI 제공자. */
+  provider: ProviderType;
+  /** Local SD 연결 설정. */
+  localSD: LocalSDSettings;
   paletteSize: number;
   postProcess: PostProcessConfig;
   /**
@@ -27,12 +41,16 @@ export interface SettingsState {
   requireEdges: boolean;
   setApiKey: (key: string) => void;
   removeApiKey: () => void;
+  setProvider: (provider: ProviderType) => void;
+  setLocalSD: (patch: Partial<LocalSDSettings>) => void;
   setPaletteSize: (size: number) => void;
   setPostProcess: (patch: Partial<PostProcessConfig>) => void;
   setRequireEdges: (v: boolean) => void;
 }
 
 const STORAGE_KEY = "pixeler_api_keys";
+const LOCAL_SD_STORAGE_KEY = "pixeler_local_sd";
+const PROVIDER_STORAGE_KEY = "pixeler_provider";
 
 /**
  * 마이그레이션:
@@ -60,8 +78,56 @@ function saveApiKey(key: string) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ apiKey: key }));
 }
 
+function loadLocalSD(): LocalSDSettings {
+  const defaults: LocalSDSettings = {
+    url: "http://localhost:7861",
+    loraName: "",
+    loraWeight: 0.8,
+  };
+  try {
+    const stored = localStorage.getItem(LOCAL_SD_STORAGE_KEY);
+    if (!stored) return defaults;
+    const parsed: unknown = JSON.parse(stored);
+    if (typeof parsed === "object" && parsed !== null) {
+      const obj = parsed as Record<string, unknown>;
+      return {
+        url: typeof obj.url === "string" ? obj.url : defaults.url,
+        loraName:
+          typeof obj.loraName === "string" ? obj.loraName : defaults.loraName,
+        loraWeight:
+          typeof obj.loraWeight === "number"
+            ? obj.loraWeight
+            : defaults.loraWeight,
+      };
+    }
+  } catch {
+    // 파싱 실패 시 기본값
+  }
+  return defaults;
+}
+
+function saveLocalSD(settings: LocalSDSettings) {
+  localStorage.setItem(LOCAL_SD_STORAGE_KEY, JSON.stringify(settings));
+}
+
+function loadProvider(): ProviderType {
+  try {
+    const stored = localStorage.getItem(PROVIDER_STORAGE_KEY);
+    if (stored === "localSD") return "localSD";
+  } catch {
+    // 파싱 실패 시 기본값
+  }
+  return "stability";
+}
+
+function saveProvider(provider: ProviderType) {
+  localStorage.setItem(PROVIDER_STORAGE_KEY, provider);
+}
+
 export const useSettingsStore = create<SettingsState>((set) => ({
   apiKey: loadApiKey(),
+  provider: loadProvider(),
+  localSD: loadLocalSD(),
   paletteSize: 16,
   postProcess: {
     downscale: "mode",
@@ -80,6 +146,18 @@ export const useSettingsStore = create<SettingsState>((set) => ({
     saveApiKey("");
     set({ apiKey: "" });
   },
+
+  setProvider: (provider) => {
+    saveProvider(provider);
+    set({ provider });
+  },
+
+  setLocalSD: (patch) =>
+    set((state) => {
+      const next = { ...state.localSD, ...patch };
+      saveLocalSD(next);
+      return { localSD: next };
+    }),
 
   setPaletteSize: (size) => {
     if (size === 0 || (size >= 4 && size <= 64)) set({ paletteSize: size });

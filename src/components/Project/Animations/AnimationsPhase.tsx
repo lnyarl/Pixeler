@@ -24,6 +24,8 @@ import { useProjectStore } from "@/stores/projectStore";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
 import { StabilityAdapter } from "@/services/ai/providers/stability";
+import { LocalSDAdapter } from "@/services/ai/providers/localSD";
+import type { AIAdapter } from "@/services/ai/types";
 import {
   buildAnimationSheetPrompt,
   buildSingleAnimationFramePrompt,
@@ -99,6 +101,8 @@ export default function AnimationsPhase() {
   );
 
   const apiKey = useSettingsStore((s) => s.apiKey);
+  const provider = useSettingsStore((s) => s.provider);
+  const localSD = useSettingsStore((s) => s.localSD);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const requireEdges = useSettingsStore((s) => s.requireEdges);
   const postProcess = useSettingsStore((s) => s.postProcess);
@@ -214,11 +218,18 @@ export default function AnimationsPhase() {
       setGenError("이 방향에 sprite가 없습니다.");
       return;
     }
-    if (!apiKey) {
+    if (provider === "stability" && !apiKey) {
       setGenError("API 키를 설정해주세요. (설정 ⚙)");
       return;
     }
-    const adapter = new StabilityAdapter(apiKey);
+    const adapter: AIAdapter =
+      provider === "localSD"
+        ? new LocalSDAdapter(
+            localSD.url,
+            localSD.loraName || undefined,
+            localSD.loraWeight
+          )
+        : new StabilityAdapter(apiKey);
 
     const safeFrameCount = Math.max(
       FRAME_COUNT_MIN,
@@ -250,7 +261,7 @@ export default function AnimationsPhase() {
       finalPrompt,
       referenceImage: inputBase64,
       meta: {
-        provider: "stability",
+        provider,
         width: meta.width,
         height: meta.height,
         paletteSize,
@@ -259,13 +270,18 @@ export default function AnimationsPhase() {
     });
 
     try {
-      const results = await adapter.controlStructure!({
+      if (!adapter.controlStructure) {
+        throw new Error(
+          `${adapter.name} 제공자는 애니메이션 시트 생성(controlStructure)을 지원하지 않습니다.`
+        );
+      }
+      const results = await adapter.controlStructure({
         inputImage: inputBase64,
         prompt: finalPrompt,
         controlStrength: 0.6,
       });
       const rawBase64 = results[0]?.base64;
-      if (!rawBase64) throw new Error("Stability 응답이 비어있습니다.");
+      if (!rawBase64) throw new Error("AI 응답이 비어있습니다.");
       const sheetImage = await base64ToImageData(rawBase64);
       const frames = await processAnimationSheetToFrames({
         sheet: sheetImage,
@@ -404,11 +420,18 @@ export default function AnimationsPhase() {
     if (!meta || !activeDir || !selectedClip) return;
     const ctx = getDirectionContext(activeDir);
     if (!ctx) return;
-    if (!apiKey) {
+    if (provider === "stability" && !apiKey) {
       setGenError("API 키를 설정해주세요. (설정 ⚙)");
       return;
     }
-    const adapter = new StabilityAdapter(apiKey);
+    const adapter: AIAdapter =
+      provider === "localSD"
+        ? new LocalSDAdapter(
+            localSD.url,
+            localSD.loraName || undefined,
+            localSD.loraWeight
+          )
+        : new StabilityAdapter(apiKey);
 
     setGenError(null);
     setBusyFrameIdx(frameIdx);
@@ -439,7 +462,7 @@ export default function AnimationsPhase() {
       finalPrompt,
       referenceImage: inputBase64,
       meta: {
-        provider: "stability",
+        provider,
         width: meta.width,
         height: meta.height,
         paletteSize,
@@ -448,13 +471,18 @@ export default function AnimationsPhase() {
     });
 
     try {
-      const results = await adapter.controlStructure!({
+      if (!adapter.controlStructure) {
+        throw new Error(
+          `${adapter.name} 제공자는 프레임 재생성(controlStructure)을 지원하지 않습니다.`
+        );
+      }
+      const results = await adapter.controlStructure({
         inputImage: inputBase64,
         prompt: finalPrompt,
         controlStrength: 0.6,
       });
       const rawBase64 = results[0]?.base64;
-      if (!rawBase64) throw new Error("Stability 응답이 비어있습니다.");
+      if (!rawBase64) throw new Error("AI 응답이 비어있습니다.");
       const single = await base64ToImageData(rawBase64);
       const processed = await runPostProcess(single, {
         targetWidth: meta.width,

@@ -6,6 +6,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
 import { useCanvasHandleStore } from "@/stores/canvasHandleStore";
 import { StabilityAdapter } from "@/services/ai/providers/stability";
+import { LocalSDAdapter } from "@/services/ai/providers/localSD";
 import { runPostProcess } from "@/services/ai/postprocess/pipeline";
 import {
   buildGeneratePrompt,
@@ -54,6 +55,8 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
   const cancel = useGenerationStore((s) => s.cancel);
 
   const apiKey = useSettingsStore((s) => s.apiKey);
+  const provider = useSettingsStore((s) => s.provider);
+  const localSD = useSettingsStore((s) => s.localSD);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const requireEdges = useSettingsStore((s) => s.requireEdges);
   const postProcess = useSettingsStore((s) => s.postProcess);
@@ -86,7 +89,7 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
       return;
     }
 
-    if (!apiKey) {
+    if (provider === "stability" && !apiKey) {
       setError("API 키를 설정해주세요. (설정 버튼 ⚙)");
       return;
     }
@@ -95,7 +98,14 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
     const startTime = Date.now();
 
     try {
-      const adapter = new StabilityAdapter(apiKey);
+      const adapter =
+        provider === "localSD"
+          ? new LocalSDAdapter(
+              localSD.url,
+              localSD.loraName || undefined,
+              localSD.loraWeight
+            )
+          : new StabilityAdapter(apiKey);
       let results: GeneratedImage[];
 
       if (hasMask && hasCanvasContent && adapter.regenerateWithFeedback) {
@@ -388,11 +398,11 @@ export default function PromptPanel({ onDraftsReady }: PromptPanelProps) {
   }
 
   const buttonLabel = hasMask ? "부분 수정" : hasCanvasContent ? "수정 생성" : "생성";
-  const currentApiKey = apiKey;
+  const showApiKeyWarning = provider === "stability" && !apiKey;
 
   return (
     <div className="flex flex-col gap-2">
-      {!currentApiKey && (
+      {showApiKeyWarning && (
         <div className="bg-yellow-900/30 border border-yellow-700 rounded p-2 text-xs text-yellow-300">
           API 키가 설정되지 않았습니다. 우측 상단 ⚙ 버튼에서 설정해주세요.
         </div>

@@ -13,6 +13,8 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useDebugLogStore } from "@/stores/debugLogStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { StabilityAdapter } from "@/services/ai/providers/stability";
+import { LocalSDAdapter } from "@/services/ai/providers/localSD";
+import type { AIAdapter } from "@/services/ai/types";
 import { buildDirectionSheetPrompt } from "@/services/ai/promptBuilder/direction";
 import { processSheetToDirections } from "@/services/ai/spriteSheet/processSheet";
 import { buildDevDirectionSheet } from "@/services/ai/spriteSheet/devDummySheet";
@@ -41,6 +43,8 @@ export default function SheetGenerationPanel({
   const historyActive = useHistoryStore((s) => s.activeItemId);
 
   const apiKey = useSettingsStore((s) => s.apiKey);
+  const provider = useSettingsStore((s) => s.provider);
+  const localSD = useSettingsStore((s) => s.localSD);
   const paletteSize = useSettingsStore((s) => s.paletteSize);
   const requireEdges = useSettingsStore((s) => s.requireEdges);
   const postProcess = useSettingsStore((s) => s.postProcess);
@@ -85,11 +89,18 @@ export default function SheetGenerationPanel({
       setError("베이스 sprite를 먼저 만드세요.");
       return;
     }
-    if (!apiKey) {
+    if (provider === "stability" && !apiKey) {
       setError("API 키를 설정해주세요. (설정 ⚙)");
       return;
     }
-    const adapter = new StabilityAdapter(apiKey);
+    const adapter: AIAdapter =
+      provider === "localSD"
+        ? new LocalSDAdapter(
+            localSD.url,
+            localSD.loraName || undefined,
+            localSD.loraWeight
+          )
+        : new StabilityAdapter(apiKey);
 
     setError(null);
     setBusy(true);
@@ -113,7 +124,7 @@ export default function SheetGenerationPanel({
       finalPrompt,
       referenceImage: inputBase64,
       meta: {
-        provider: "stability",
+        provider,
         width: meta.width,
         height: meta.height,
         paletteSize,
@@ -121,7 +132,12 @@ export default function SheetGenerationPanel({
     });
 
     try {
-      const results = await adapter.controlStructure!({
+      if (!adapter.controlStructure) {
+        throw new Error(
+          `${adapter.name} 제공자는 시트 생성(controlStructure)을 지원하지 않습니다.`
+        );
+      }
+      const results = await adapter.controlStructure({
         inputImage: inputBase64,
         prompt: finalPrompt,
         controlStrength: 0.7,
